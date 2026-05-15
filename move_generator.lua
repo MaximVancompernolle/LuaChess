@@ -1,6 +1,8 @@
+require 'misc_functions'
+
+local ffi = require('ffi')
 local bit = require('bit')
-local bnot = bit.bnot
-local band, bor, bxor = bit.band, bit.bor, bit.bxor
+local bnot, band, bor, bxor = bit.bnot, bit.band, bit.bor, bit.bxor
 local lshift, rshift = bit.lshift, bit.rshift
 
 ---@class MoveGenerator
@@ -231,38 +233,53 @@ function MoveGenerator:inDoubleCheck()
 end
 
 function MoveGenerator:calculateSlidingAttackData()
-	local slidingAttackMap = 0
+	-- TODO replace queens.numPieces with #queens
+	-- need __len metamethod in PieceList
+
+	self.slidingAttackMap = ffi.new('uint64_t', 0)
 	local opponentColor = B.colorToMove * -1
 
 	local queens = B.queens[opponentColor]
-	for i = 1, #queens do
+	for i = 1, queens.numPieces do
+		print('calculating queen attack data')
 		self:calculateSlidingAttackPiece(queens[i], 1, 8)
 	end
 
 	local rooks = B.rooks[opponentColor]
-	for i = 1, #rooks do
-		self:calculateSlidingAttackPiece(queens[i], 1, 4)
+	for i = 1, rooks.numPieces do
+		print('calculating rook attack data')
+		self:calculateSlidingAttackPiece(rooks[i], 1, 4)
 	end
 
 	local bishops = B.bishops[opponentColor]
-	for i = 1, #bishops do
-		self:calculateSlidingAttackPiece(queens[i], 5, 8)
+	for i = 1, bishops.numPieces do
+		print('calculating bishop attack data')
+		self:calculateSlidingAttackPiece(bishops[i], 5, 8)
 	end
 end
 
 function MoveGenerator:calculateSlidingAttackPiece(startSquare, startDirection, endDirection)
+	local mask = ffi.new('uint64_t', 1)
 	for directionIndex = startDirection, endDirection do
 		for n = 1, self.numSquaresToEdge[startSquare][directionIndex] do
 			local endSquare = startSquare + self.slidingOffsets[directionIndex] * n
 			local pieceOnEndSquare = B.P[endSquare]
 
-			bor(slidingAttackMap, lshift(1, endSquare))
+			self.slidingAttackMap = bor(self.slidingAttackMap, lshift(mask, endSquare - 1))
+
+			if endSquare ~= B.kings[B.colorToMove] then
+				if pieceOnEndSquare ~= 0 then
+					break
+				end
+			end
 		end
 	end
 end
 
 function MoveGenerator:calculateAttackData()
 	self:calculateSlidingAttackData()
+
+	print(tobinary_64(self.slidingAttackMap))
 end
 
 function MoveGenerator:precomputedMoveData()

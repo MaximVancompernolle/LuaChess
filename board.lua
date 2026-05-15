@@ -34,6 +34,7 @@ function Board:init()
 	self.queens = {}
 	self.queens[1] = PieceList()
 	self.queens[-1] = PieceList()
+	self.queens[-1]:addPieceAtSquare(60)
 
 	self.rooks = {}
 	self.rooks[1] = PieceList()
@@ -52,14 +53,14 @@ function Board:init()
 	self.pawns[-1] = PieceList()
 
 	self.kings = {}
-	self.kings[1] = 0
-	self.kings[-1] = 0
+	self.kings[1] = 5
+	self.kings[-1] = 61
 
 	self.attackMap = {}
 	self.attackMap[1] = 0
 	self.attackMap[-1] = 0
 
-	self:fenToPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
+	self:fenToPosition('rnbqkbnr/ppp1pppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 	-- self:fenToPosition('r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R')
 end
 
