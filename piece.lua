@@ -45,6 +45,10 @@ function Piece:isSlidingPiece()
 	return char == 'b' or char == 'r' or char == 'q'
 end
 
+function Piece:isQueen()
+	return self.type:lower() == 'q'
+end
+
 function Piece:isBishop()
 	return self.type:lower() == 'b'
 end

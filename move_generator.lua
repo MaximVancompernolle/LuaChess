@@ -33,6 +33,7 @@ function MoveGenerator:init()
 	self.slidingOffsets = {8, -8, -1, 1, 7, -7, 9, -9} -- N, S, W, E, NW, SE, NE, SW
 	self.numSquaresToEdge = {}
 	self.knightMoves = {}
+	self.knightAttackBitBoards = {}
 	self:precomputedMoveData()
 end
 
@@ -241,19 +242,16 @@ function MoveGenerator:calculateSlidingAttackData()
 
 	local queens = B.queens[opponentColor]
 	for i = 1, queens.numPieces do
-		print('calculating queen attack data')
 		self:calculateSlidingAttackPiece(queens[i], 1, 8)
 	end
 
 	local rooks = B.rooks[opponentColor]
 	for i = 1, rooks.numPieces do
-		print('calculating rook attack data')
 		self:calculateSlidingAttackPiece(rooks[i], 1, 4)
 	end
 
 	local bishops = B.bishops[opponentColor]
 	for i = 1, bishops.numPieces do
-		print('calculating bishop attack data')
 		self:calculateSlidingAttackPiece(bishops[i], 5, 8)
 	end
 end
@@ -276,10 +274,30 @@ function MoveGenerator:calculateSlidingAttackPiece(startSquare, startDirection, 
 	end
 end
 
+function MoveGenerator:calculateKnightAttackData()
+	self.knightAttackMap = ffi.new('uint64_t', 0)
+	local mask = ffi.new('uint64_t', 1)
+	local opponentColor = B.colorToMove * -1
+
+	local knights = B.knights[opponentColor]
+	for i = 1, knights.numPieces do
+		local startSquare = knights[i]
+		self.knightAttackMap = bor(self.knightAttackMap, self.knightAttackBitBoards[startSquare])
+	end
+end
+
+function MoveGenerator:calculatePawnAttackData()
+	self.pawnAttackMap = ffi.new('uint64_t', 0)
+end
+
 function MoveGenerator:calculateAttackData()
 	self:calculateSlidingAttackData()
+	self:calculateKnightAttackData()
+	self:calculatePawnAttackData()
 
-	print(tobinary_64(self.slidingAttackMap))
+	-- print(tobinary_64(self.slidingAttackMap))
+	print(tobinary_64(self.knightAttackMap))
+	-- print(tobinary_64(self.pawnAttackMap))
 end
 
 function MoveGenerator:precomputedMoveData()
@@ -307,6 +325,8 @@ function MoveGenerator:precomputedMoveData()
 			}
 
 			self.knightMoves[index] = {}
+			local knightBitBoard = ffi.new('uint64_t', 0)
+			local mask = ffi.new('uint64_t', 1)
 
 			for offsetIndex = 1, #knightOffsets do
 				local knightEndSquare = index + knightOffsets[offsetIndex]
@@ -316,9 +336,12 @@ function MoveGenerator:precomputedMoveData()
 
 					if math.max(math.abs(file - knightSquareX), math.abs(rank - knightSquareY)) == 2 then
 						table.insert(self.knightMoves[index], knightEndSquare)
+						knightBitBoard = bor(knightBitBoard, lshift(mask, knightEndSquare - 1))
 					end
 				end
 			end
+
+			self.knightAttackBitBoards[index] = knightBitBoard
 		end
 	end
 end

@@ -34,7 +34,6 @@ function Board:init()
 	self.queens = {}
 	self.queens[1] = PieceList()
 	self.queens[-1] = PieceList()
-	self.queens[-1]:addPieceAtSquare(60)
 
 	self.rooks = {}
 	self.rooks[1] = PieceList()
@@ -53,20 +52,20 @@ function Board:init()
 	self.pawns[-1] = PieceList()
 
 	self.kings = {}
-	self.kings[1] = 5
-	self.kings[-1] = 61
+	self.kings[1] = nil
+	self.kings[-1] = nil
 
 	self.attackMap = {}
 	self.attackMap[1] = 0
 	self.attackMap[-1] = 0
 
-	self:fenToPosition('rnbqkbnr/ppp1pppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
+	self:fenToPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 	-- self:fenToPosition('r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R')
 end
 
 function Board:fenToPosition(fen)
-	local y = 8
-	local x = 1
+	local rank = 8
+	local file = 1
 
 	for i = 1, #fen do
 		local cur = fen[i]
@@ -74,20 +73,40 @@ function Board:fenToPosition(fen)
 		if cur == ' ' then break end -- need to handle turn order, castling, en passant, and turn count
 
 		if tonumber(cur) then
-			x = x + cur
+			file = file + cur
 		elseif cur == '/' then
-			y = y - 1
-			x = 1
+			rank = rank - 1
+			file = 1
 		else
-			local index = x + ((y - 1) * 8)
-			self.P[index] = Piece(cur)
-			x = x + 1
+			local index = file + ((rank - 1) * 8)
+			local piece = Piece(cur)
+			self:addPieceToBitBoard(piece, index)
+			self.P[index] = piece
+			file = file + 1
 		end
 	end
 end
 
 function Board:positionToFen()
 
+end
+
+function Board:addPieceToBitBoard(piece, square)
+	local color = piece.color
+
+	if piece:isPawn() then
+		self.pawns[color]:addPieceAtSquare(square)
+	elseif piece:isRook() then
+		self.rooks[color]:addPieceAtSquare(square)
+	elseif piece:isKnight() then
+		self.knights[color]:addPieceAtSquare(square)
+	elseif piece:isBishop() then
+		self.bishops[color]:addPieceAtSquare(square)
+	elseif piece:isQueen() then
+		self.queens[color]:addPieceAtSquare(square)
+	else
+		self.kings[color] = square
+	end
 end
 
 function Board:toConsole()

@@ -17,7 +17,7 @@ function indexFromPixel(x, y)
 end
 
 function tobinary_64(value)
-	-- TODO rewrite to print 64 bit values mapping to a board view
+	-- TODO ? rewrite to print 64 bit values mapping to a board view
 	local bits = {}
 
 	for i = 63, 0, -1 do
