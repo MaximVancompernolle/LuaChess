@@ -22,11 +22,25 @@ function tobinary_64(value)
 	-- TODO ? rewrite to print 64 bit values mapping to a board view
 	local bits = {}
 
-	for i = 63, 0, -1 do
-		local bit_set = bit.band(bit.rshift(value, i), 1)
+	for i = 64, 1, -1 do
+		local bit_set = band(rshift(value, i - 1), 1)
 		table.insert(bits, tonumber(bit_set))
 	end
 	return table.concat(bits)
+end
+
+function tobinaryboard(value)
+	local s = ''
+	for rank = 8, 1, -1 do
+		local rank_bits = {}
+		for file = 1, 8 do
+			local index = file + ((rank - 1) * 8)
+			local bit_set = band(rshift(value, index - 1), 1)
+			table.insert(rank_bits, tonumber(bit_set))
+		end
+		s = s .. table.concat(rank_bits) .. '\n'
+	end
+	return s
 end
 
 function containsSquare(bitboard, square)
