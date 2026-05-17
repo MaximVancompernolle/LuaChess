@@ -30,10 +30,21 @@ MoveGenerator = Object:extend()
 function MoveGenerator:init()
 	self.debug = false
 
+	self.check = false
+	self.doubleCheck = false
+
+	self.opponentAttackMap = nil -- bit board of all squares attacked by opponent
+
 	self.slidingOffsets = {8, -8, -1, 1, 7, -7, 9, -9} -- N, S, W, E, NW, SE, NE, SW
 	self.numSquaresToEdge = {}
+
 	self.knightMoves = {}
 	self.knightAttackBitBoards = {}
+
+	self.pawnAttackBitBoards = {}
+	self.pawnAttackBitBoards[1] = {}
+	self.pawnAttackBitBoards[-1] = {}
+
 	self:precomputedMoveData()
 end
 
@@ -195,7 +206,7 @@ function MoveGenerator:generateKingMoves(piece, startSquare)
 		3. the king is not in check
 		4. the king does not pass through or end on a square that is attacked by an enemy piece
 	]]
-	local canCastle = not (piece.hasMoved or self:inCheck())
+	local canCastle = not (piece.hasMoved or self.check)
 
 	if canCastle then
 		if piece.color == 1 then
@@ -221,17 +232,17 @@ end
 
 -- need logic to prevent pinned pieces from moving and revealing attacks on the king
 -- however, allow a pinned piece to move along the pinned ray
-function MoveGenerator:isPinned(piece)
-	return false
-end
+-- function MoveGenerator:isPinned(piece)
+-- 	return false
+-- end
 
-function MoveGenerator:inCheck()
-	return false
-end
+-- function MoveGenerator:inCheck()
+-- 	return self.check
+-- end
 
-function MoveGenerator:inDoubleCheck()
-	return false
-end
+-- function MoveGenerator:inDoubleCheck()
+-- 	return self.doubleCheck
+-- end
 
 function MoveGenerator:calculateSlidingAttackData()
 	-- TODO replace queens.numPieces with #queens
@@ -276,18 +287,35 @@ end
 
 function MoveGenerator:calculateKnightAttackData()
 	self.knightAttackMap = ffi.new('uint64_t', 0)
-	local mask = ffi.new('uint64_t', 1)
-	local opponentColor = B.colorToMove * -1
+	-- self.knightCheck = false
 
+	-- local mask = ffi.new('uint64_t', 1)
+	local opponentColor = B.colorToMove * -1
 	local knights = B.knights[opponentColor]
+
 	for i = 1, knights.numPieces do
 		local startSquare = knights[i]
 		self.knightAttackMap = bor(self.knightAttackMap, self.knightAttackBitBoards[startSquare])
+
+		-- if not self.knightCheck and containsSquare(self.knightAttackMap, B.kings[B.colorToMove]) then
+		-- 	self.knightCheck = true
+		-- 	self.doubleCheck = self.check
+		-- 	self.check = true
+		-- 	-- self.checkRayBitMask = bor(self.checkRayBitMask, lshift(mask, startSquare - 1))
+		-- end
 	end
 end
 
 function MoveGenerator:calculatePawnAttackData()
 	self.pawnAttackMap = ffi.new('uint64_t', 0)
+	-- self.pawnCheck = false
+
+	local opponentColor = B.colorToMove * -1
+	local pawns = B.pawns[opponentColor]
+
+	for i = 1, pawns.numPieces do
+		local startSquare = pawns[i]
+	end
 end
 
 function MoveGenerator:calculateAttackData()
@@ -296,14 +324,23 @@ function MoveGenerator:calculateAttackData()
 	self:calculatePawnAttackData()
 
 	-- print(tobinary_64(self.slidingAttackMap))
-	print(tobinary_64(self.knightAttackMap))
+	-- print(tobinary_64(self.knightAttackMap))
 	-- print(tobinary_64(self.pawnAttackMap))
+
+	self.noPawnsAttackMap = bor(self.slidingAttackMap, self.knightAttackMap)
+	self.attackMap = bor(self.noPawnsAttackMap, self.pawnAttackMap)
+end
+
+function MoveGenerator:isSquareAttacked(square)
+	return containsSquare(self.attackMap, square)
 end
 
 function MoveGenerator:precomputedMoveData()
 	-- TODO precompute move offsets for sliding pieces
 
 	local knightOffsets = {6, -6, 10, -10, 15, -15, 17, -17}
+	local mask = ffi.new('uint64_t', 1)
+
 	for file = 1, 8 do
 		for rank = 1, 8 do
 			local numNorth = 8 - rank
@@ -326,8 +363,7 @@ function MoveGenerator:precomputedMoveData()
 
 			self.knightMoves[index] = {}
 			local knightBitBoard = ffi.new('uint64_t', 0)
-			local mask = ffi.new('uint64_t', 1)
-
+			
 			for offsetIndex = 1, #knightOffsets do
 				local knightEndSquare = index + knightOffsets[offsetIndex]
 				if knightEndSquare >= 1 and knightEndSquare <= 64 then
@@ -342,6 +378,29 @@ function MoveGenerator:precomputedMoveData()
 			end
 
 			self.knightAttackBitBoards[index] = knightBitBoard
+
+			local pawnBitBoardWhite = ffi.new('uint64_t', 0)
+			local pawnBitBoardBlack = ffi.new('uint64_t', 0)
+
+			if file > 1 then
+				if rank < 8 then
+					pawnBitBoardWhite = bor(pawnBitBoardWhite, lshift(mask, index + 6))
+				end
+				if rank > 1 then
+					pawnBitBoardBlack = bor(pawnBitBoardBlack, lshift(mask, index - 10))
+				end
+			end
+			if file < 8 then
+				if rank < 8 then
+					pawnBitBoardWhite = bor(pawnBitBoardWhite, lshift(mask, index + 8))
+				end
+				if rank > 1 then
+					pawnBitBoardBlack = bor(pawnBitBoardBlack, lshift(mask, index - 8))
+				end
+			end
+
+			self.pawnAttackBitBoards[1][index] = pawnBitBoardWhite
+			self.pawnAttackBitBoards[-1][index] = pawnBitBoardBlack
 		end
 	end
 end
