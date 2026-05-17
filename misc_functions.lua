@@ -1,4 +1,6 @@
 local bit = require('bit')
+local bnot, band, bor, bxor = bit.bnot, bit.band, bit.bor, bit.bxor
+local lshift, rshift = bit.lshift, bit.rshift
 
 function pixelFromIndex(index)
 	return ((index - 1) % 8) * 100, 700 - (100 * (math.floor((index - 1) / 8)))
@@ -25,4 +27,8 @@ function tobinary_64(value)
 		table.insert(bits, tonumber(bit_set))
 	end
 	return table.concat(bits)
+end
+
+function containsSquare(bitboard, square)
+	return band(rshift(bitboard, square - 1), 1) ~= 0
 end
