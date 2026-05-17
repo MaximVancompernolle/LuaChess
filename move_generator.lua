@@ -219,12 +219,16 @@ function MoveGenerator:generateKingMoves(piece, startSquare)
 
 		if kingsideRights then
 			if B.P[startSquare + 1] == 0 and B.P[startSquare + 2] == 0 then
-				table.insert(self.M, {startSquare, startSquare + 2, flag = 'O-O'})
+				if not (containsSquare(self.attackMap, startSquare + 1) or containsSquare(self.attackMap, startSquare + 2)) then
+					table.insert(self.M, {startSquare, startSquare + 2, flag = 'O-O'})
+				end
 			end
 		end
 		if queensideRights then
 			if B.P[startSquare - 1] == 0 and B.P[startSquare - 2] == 0 and B.P[startSquare - 3] == 0 then
-				table.insert(self.M, {startSquare, startSquare - 2, flag = 'O-O-O'})
+				if not (containsSquare(self.attackMap, startSquare - 1) or containsSquare(self.attackMap, startSquare - 2) or containsSquare(self.attackMap, startSquare - 3)) then
+					table.insert(self.M, {startSquare, startSquare - 2, flag = 'O-O-O'})
+				end
 			end
 		end
 	end
@@ -297,6 +301,7 @@ function MoveGenerator:calculateKnightAttackData()
 		local startSquare = knights[i]
 		self.knightAttackMap = bor(self.knightAttackMap, self.knightAttackBitBoards[startSquare])
 
+		-- TODO calculate if king in check
 		-- if not self.knightCheck and containsSquare(self.knightAttackMap, B.kings[B.colorToMove]) then
 		-- 	self.knightCheck = true
 		-- 	self.doubleCheck = self.check
@@ -315,6 +320,9 @@ function MoveGenerator:calculatePawnAttackData()
 
 	for i = 1, pawns.numPieces do
 		local startSquare = pawns[i]
+		self.pawnAttackMap = bor(self.pawnAttackMap, self.pawnAttackBitBoards[opponentColor][startSquare])
+
+		-- TODO calculate if king in check
 	end
 end
 
