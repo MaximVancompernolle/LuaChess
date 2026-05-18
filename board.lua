@@ -246,7 +246,9 @@ function Board:makeMove(startSquare, endSquare, flag)
 	self.P[endSquare] = self.selected.piece
 
 	-- TODO fix adding piece to list on promotion
-	self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:movePiece(startSquare, endSquare)
+	if not pieceToMove:isKing() then
+		self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:movePiece(startSquare, endSquare)
+	end
 
 	self.P[endSquare].hasMoved = true
 	self.colorToMove = self.colorToMove * -1
