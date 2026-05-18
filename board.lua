@@ -215,7 +215,7 @@ function Board:makeMove(startSquare, endSquare, flag)
 		local pushDirection = self.colorToMove
 		self.P[endSquare - (8 * pushDirection)] = 0
 
-		-- self.pawns[self.colorToMove * -1]:removePieceAtSquare(endSquare - (8 * pushDirection))
+		self.pawns[self.colorToMove * -1]:removePieceAtSquare(endSquare - (8 * pushDirection))
 	end
 	if string.find(flag, 'promote') then
 		self.selected.piece = Piece(flag[-1])
@@ -224,15 +224,15 @@ function Board:makeMove(startSquare, endSquare, flag)
 		self.P[endSquare - 1] = self.P[endSquare + 1]
 		self.P[endSquare + 1] = 0
 
-		-- self.rooks[self.colorToMove]:movePiece(endSquare + 1, endSquare - 1)
-		-- self.rooks[self.colorToMove]:removePieceAtSquare(endSquare + 1)
+		self.rooks[self.colorToMove]:movePiece(endSquare + 1, endSquare - 1)
+		self.kings[self.colorToMove] = endSquare
 	end
 	if flag == 'O-O-O' then
 		self.P[endSquare + 1] = self.P[endSquare - 2]
 		self.P[endSquare - 2] = 0
 
-		-- self.rooks[self.colorToMove]:movePiece(endSquare - 2, endSquare + 1)
-		-- self.rooks[self.colorToMove]:removePieceAtSquare(endSquare - 2)
+		self.rooks[self.colorToMove]:movePiece(endSquare - 2, endSquare + 1)
+		self.kings[self.colorToMove] = endSquare
 	end
 
 	::skipFlags::
@@ -248,6 +248,8 @@ function Board:makeMove(startSquare, endSquare, flag)
 	-- TODO fix adding piece to list on promotion
 	if not pieceToMove:isKing() then
 		self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:movePiece(startSquare, endSquare)
+	else
+		self.kings[pieceToMove.color] = endSquare
 	end
 
 	self.P[endSquare].hasMoved = true
