@@ -17,14 +17,15 @@ end
 
 function PieceList:addPieceAtSquare(square)
 	self.numPieces = self.numPieces + 1
-	table.insert(self.occupiedSquares, self.numPieces, square)
+	self.occupiedSquares[self.numPieces] = square
 	self.map[square] = self.numPieces
 end
 
 function PieceList:removePieceAtSquare(square)
 	local index = self.map[square]
-	self.occupiedSquares[index] = self.occupiedSquares[numPieces - 1]
+	self.occupiedSquares[index] = self.occupiedSquares[self.numPieces]
 	self.map[self.occupiedSquares[index]] = index
+	self.occupiedSquares[self.numPieces] = nil
 	self.numPieces = self.numPieces - 1
 end
 

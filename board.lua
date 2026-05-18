@@ -199,9 +199,6 @@ function Board:makeMove(startSquare, endSquare, flag)
 	self.enpassantSquare = nil
 	self.P[startSquare] = 0
 
-	-- clean this up brah
-	-- self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:removePieceAtSquare(startSquare)
-
 	if not flag then goto skipFlags end
 
 	--[[
@@ -240,13 +237,18 @@ function Board:makeMove(startSquare, endSquare, flag)
 
 	::skipFlags::
 
+	-- update piece list when piece is captured
+	if self.P[endSquare] ~= 0 then
+		local pieceToCapture = self.P[endSquare]
+		self.allPieceLists[pieceToCapture.type:lower()][pieceToCapture.color]:removePieceAtSquare(endSquare)
+	end
+
 	self.P[endSquare] = self.selected.piece
+
 	-- TODO fix adding piece to list on promotion
-	-- self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:addPieceAtSquare(endSquare)
 	self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:movePiece(startSquare, endSquare)
 
 	self.P[endSquare].hasMoved = true
-
 	self.colorToMove = self.colorToMove * -1
 	MG:generateMoves()
 end
