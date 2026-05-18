@@ -71,7 +71,8 @@ function Board:init()
 	self.attackMap[1] = 0
 	self.attackMap[-1] = 0
 
-	self:fenToPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
+	-- self:fenToPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
+	self:fenToPosition('r3k2r/8/8/8/8/8/8/R3K2R')
 	-- self:fenToPosition('rnbqk2r/ppppPppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 	-- self:fenToPosition('r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R')
 end
@@ -199,7 +200,7 @@ function Board:makeMove(startSquare, endSquare, flag)
 	self.P[startSquare] = 0
 
 	-- clean this up brah
-	self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:removePieceAtSquare(startSquare)
+	-- self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:removePieceAtSquare(startSquare)
 
 	if not flag then goto skipFlags end
 
@@ -217,7 +218,7 @@ function Board:makeMove(startSquare, endSquare, flag)
 		local pushDirection = self.colorToMove
 		self.P[endSquare - (8 * pushDirection)] = 0
 
-		self.pawns[self.colorToMove * -1]:removePieceAtSquare(endSquare - (8 * pushDirection))
+		-- self.pawns[self.colorToMove * -1]:removePieceAtSquare(endSquare - (8 * pushDirection))
 	end
 	if string.find(flag, 'promote') then
 		self.selected.piece = Piece(flag[-1])
@@ -226,25 +227,46 @@ function Board:makeMove(startSquare, endSquare, flag)
 		self.P[endSquare - 1] = self.P[endSquare + 1]
 		self.P[endSquare + 1] = 0
 
-		self.rooks[self.colorToMove]:movePiece(endSquare + 1, endSquare - 1)
-		self.rooks[self.colorToMove]:removePieceAtSquare(endSquare + 1)
+		-- self.rooks[self.colorToMove]:movePiece(endSquare + 1, endSquare - 1)
+		-- self.rooks[self.colorToMove]:removePieceAtSquare(endSquare + 1)
 	end
 	if flag == 'O-O-O' then
 		self.P[endSquare + 1] = self.P[endSquare - 2]
 		self.P[endSquare - 2] = 0
 
-		self.rooks[self.colorToMove]:movePiece(endSquare - 2, endSquare + 1)
-		self.rooks[self.colorToMove]:removePieceAtSquare(endSquare - 2)
+		-- self.rooks[self.colorToMove]:movePiece(endSquare - 2, endSquare + 1)
+		-- self.rooks[self.colorToMove]:removePieceAtSquare(endSquare - 2)
 	end
 
 	::skipFlags::
 
 	self.P[endSquare] = self.selected.piece
 	-- TODO fix adding piece to list on promotion
-	self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:addPieceAtSquare(endSquare)
+	-- self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:addPieceAtSquare(endSquare)
+	self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:movePiece(startSquare, endSquare)
+
 	self.P[endSquare].hasMoved = true
+
 	self.colorToMove = self.colorToMove * -1
 	MG:generateMoves()
+end
+
+function Board:printAllPieceLists()
+	print('white')
+	print('king: ' .. self.kings[1])
+	-- print('pawns: ' .. self.pawns[1]:tostring())
+	-- print('knights: ' .. self.knights[1]:tostring())
+	-- print('bishops: ' .. self.bishops[1]:tostring())
+	print('rooks: ' .. self.rooks[1]:tostring())
+	-- print('queens: ' .. self.queens[1]:tostring())
+
+	print('black')
+	print('king: ' .. self.kings[-1])
+	-- print('pawns: ' .. self.pawns[-1]:tostring())
+	-- print('knights: ' .. self.knights[-1]:tostring())
+	-- print('bishops: ' .. self.bishops[-1]:tostring())
+	print('rooks: ' .. self.rooks[-1]:tostring())
+	-- print('queens: ' .. self.queens[-1]:tostring())
 end
 
 function Board:clearSquares()

@@ -3,6 +3,7 @@ PieceList = Object:extend()
 
 function PieceList:init()
 	self.occupiedSquares = {}
+	self.map = {}
 	self.numPieces = 0
 
 	setmetatable(self, {
@@ -15,16 +16,31 @@ function PieceList:init()
 end
 
 function PieceList:addPieceAtSquare(square)
-	table.insert(self.occupiedSquares, square)
 	self.numPieces = self.numPieces + 1
+	table.insert(self.occupiedSquares, self.numPieces, square)
+	self.map[square] = self.numPieces
 end
 
 function PieceList:removePieceAtSquare(square)
-	table.remove(self.occupiedSquares, square)
+	local index = self.map[square]
+	self.occupiedSquares[index] = self.occupiedSquares[numPieces - 1]
+	self.map[self.occupiedSquares[index]] = index
 	self.numPieces = self.numPieces - 1
 end
 
 function PieceList:movePiece(startSquare, endSquare)
-	table.remove(self.occupiedSquares, startSquare)
-	table.insert(self.occupiedSquares, endSquare)
+	local index = self.map[startSquare]
+	self.occupiedSquares[index] = endSquare
+	self.map[endSquare] = index
+end
+
+function PieceList:tostring()
+	s = ''
+	if self.numPieces == 0 then return s end
+
+	for k, v in pairs(self.occupiedSquares) do
+		s = s .. v .. ' '
+	end
+
+	return s
 end

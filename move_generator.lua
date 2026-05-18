@@ -49,6 +49,8 @@ function MoveGenerator:init()
 end
 
 function MoveGenerator:generateMoves()
+	B:printAllPieceLists()
+
 	self.M = {}
 
 	self:calculateAttackData()
@@ -331,7 +333,7 @@ function MoveGenerator:calculateAttackData()
 	self:calculateKnightAttackData()
 	self:calculatePawnAttackData()
 
-	print(tobinaryboard(self.slidingAttackMap))
+	-- print(tobinaryboard(self.slidingAttackMap))
 	-- print(tobinaryboard(self.knightAttackMap))
 	-- print(tobinaryboard(self.pawnAttackMap))
 
