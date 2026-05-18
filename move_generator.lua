@@ -30,8 +30,8 @@ MoveGenerator = Object:extend()
 function MoveGenerator:init()
 	self.debug = false
 
-	self.check = false
-	self.doubleCheck = false
+	self.inCheck = false
+	self.inDoubleCheck = false
 
 	self.opponentAttackMap = nil -- bit board of all squares attacked by opponent
 
@@ -77,7 +77,7 @@ function MoveGenerator:generateMoves()
 
 	-- TODO no legal moves means we are in stalemate or checkmate
 	if #self.M == 0 then
-		if self:inCheck() then
+		if self.inCheck then
 			-- checkmate
 		else
 			-- stalemate
@@ -206,7 +206,7 @@ function MoveGenerator:generateKingMoves(piece, startSquare)
 		3. the king is not in check
 		4. the king does not pass through or end on a square that is attacked by an enemy piece
 	]]
-	local canCastle = not (piece.hasMoved or self.check)
+	local canCastle = not (piece.hasMoved or self.inCheck)
 
 	if canCastle then
 		if piece.color == 1 then
@@ -331,9 +331,9 @@ function MoveGenerator:calculateAttackData()
 	self:calculateKnightAttackData()
 	self:calculatePawnAttackData()
 
-	-- print(tobinary_64(self.slidingAttackMap))
-	-- print(tobinary_64(self.knightAttackMap))
-	-- print(tobinary_64(self.pawnAttackMap))
+	print(tobinaryboard(self.slidingAttackMap))
+	-- print(tobinaryboard(self.knightAttackMap))
+	-- print(tobinaryboard(self.pawnAttackMap))
 
 	self.noPawnsAttackMap = bor(self.slidingAttackMap, self.knightAttackMap)
 	self.attackMap = bor(self.noPawnsAttackMap, self.pawnAttackMap)

@@ -23,3 +23,8 @@ function PieceList:removePieceAtSquare(square)
 	table.remove(self.occupiedSquares, square)
 	self.numPieces = self.numPieces - 1
 end
+
+function PieceList:movePiece(startSquare, endSquare)
+	table.remove(self.occupiedSquares, startSquare)
+	table.insert(self.occupiedSquares, endSquare)
+end

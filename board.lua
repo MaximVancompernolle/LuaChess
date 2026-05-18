@@ -31,29 +31,41 @@ function Board:init()
 		self.P[i] = 0
 	end
 
-	self.queens = {}
-	self.queens[1] = PieceList()
-	self.queens[-1] = PieceList()
+	-- piece list stuff
+	-- can definitely clean this up
 
-	self.rooks = {}
-	self.rooks[1] = PieceList()
-	self.rooks[-1] = PieceList()
-
-	self.bishops = {}
-	self.bishops[1] = PieceList()
-	self.bishops[-1] = PieceList()
-
-	self.knights = {}
-	self.knights[1] = PieceList()
-	self.knights[-1] = PieceList()
+	self.kings = {}
+	self.kings[1] = nil
+	self.kings[-1] = nil
 
 	self.pawns = {}
 	self.pawns[1] = PieceList()
 	self.pawns[-1] = PieceList()
 
-	self.kings = {}
-	self.kings[1] = nil
-	self.kings[-1] = nil
+	self.knights = {}
+	self.knights[1] = PieceList()
+	self.knights[-1] = PieceList()
+
+	self.bishops = {}
+	self.bishops[1] = PieceList()
+	self.bishops[-1] = PieceList()
+
+	self.rooks = {}
+	self.rooks[1] = PieceList()
+	self.rooks[-1] = PieceList()
+
+	self.queens = {}
+	self.queens[1] = PieceList()
+	self.queens[-1] = PieceList()
+
+	self.allPieceLists = {
+		k = self.kings,
+		p = self.pawns,
+		n = self.knights,
+		b = self.bishops,
+		r = self.rooks,
+		q = self.queens,
+	}
 
 	self.attackMap = {}
 	self.attackMap[1] = 0
@@ -130,6 +142,7 @@ function Board:trySelectSquare(x, y)
 
 	if self.P[i] == 0 or self.P[i].color ~= self.colorToMove then return end
 
+	-- can this just store an index
 	self.selected = {
 		i = i,
 		piece = self.P[i]
@@ -144,6 +157,7 @@ function Board:tryHighlightSquare(x, y)
 		return
 	end
 
+	-- can this just store an index
 	self.highlighted = {
 		i = i,
 		piece = self.P[i]
@@ -163,8 +177,6 @@ function Board:tryMovePiece(x, y)
 end
 
 function Board:makeMove(startSquare, endSquare, flag)
-	-- flag is not getting pushed properly
-
 	--[[
 		increment ply, half move, and full move counters
 		move piece from start square to end square
@@ -179,10 +191,21 @@ function Board:makeMove(startSquare, endSquare, flag)
 
 		add position to history for 3-fold repetition
 	]]
+
+	-- TODO use this piece instead of self.selected.piece
+	local pieceToMove = self.P[startSquare]
+
 	self.enpassantSquare = nil
 	self.P[startSquare] = 0
 
+	-- clean this up brah
+	self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:removePieceAtSquare(startSquare)
+
 	if not flag then goto skipFlags end
+
+	--[[
+		test that piece lists are being updated properly for all flags
+	]]
 
 	if flag == 'double push' then
 		-- set en passant square
@@ -193,6 +216,8 @@ function Board:makeMove(startSquare, endSquare, flag)
 		-- remove captured pawn
 		local pushDirection = self.colorToMove
 		self.P[endSquare - (8 * pushDirection)] = 0
+
+		self.pawns[self.colorToMove * -1]:removePieceAtSquare(endSquare - (8 * pushDirection))
 	end
 	if string.find(flag, 'promote') then
 		self.selected.piece = Piece(flag[-1])
@@ -200,15 +225,23 @@ function Board:makeMove(startSquare, endSquare, flag)
 	if flag == 'O-O' then
 		self.P[endSquare - 1] = self.P[endSquare + 1]
 		self.P[endSquare + 1] = 0
+
+		self.rooks[self.colorToMove]:movePiece(endSquare + 1, endSquare - 1)
+		self.rooks[self.colorToMove]:removePieceAtSquare(endSquare + 1)
 	end
 	if flag == 'O-O-O' then
 		self.P[endSquare + 1] = self.P[endSquare - 2]
 		self.P[endSquare - 2] = 0
+
+		self.rooks[self.colorToMove]:movePiece(endSquare - 2, endSquare + 1)
+		self.rooks[self.colorToMove]:removePieceAtSquare(endSquare - 2)
 	end
 
 	::skipFlags::
 
 	self.P[endSquare] = self.selected.piece
+	-- TODO fix adding piece to list on promotion
+	self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:addPieceAtSquare(endSquare)
 	self.P[endSquare].hasMoved = true
 	self.colorToMove = self.colorToMove * -1
 	MG:generateMoves()
