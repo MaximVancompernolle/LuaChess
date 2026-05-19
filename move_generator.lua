@@ -32,6 +32,9 @@ function MoveGenerator:init()
 
 	self.inCheck = false
 	self.inDoubleCheck = false
+	self.pinsExist = false
+	self.pinRayBitMask = ffi.new('uint64_t', 0)
+	self.checkRayBitMask = ffi.new('uint64_t', 0)
 
 	self.opponentAttackMap = nil -- bit board of all squares attacked by opponent
 
@@ -49,7 +52,7 @@ function MoveGenerator:init()
 end
 
 function MoveGenerator:generateMoves()
-	B:printAllPieceLists()
+	-- B:printAllPieceLists()
 
 	self.M = {}
 
@@ -330,12 +333,57 @@ end
 
 function MoveGenerator:calculateAttackData()
 	self:calculateSlidingAttackData()
+
+	-- search for checks and pins
+	-- TODO small optimization: if no queens and no rooks/bishops don't need to check all directions around the king
+	local startDirection = 1
+	local endDirection = 8
+
+	local friendlyKingSquare = B.kings[B.colorToMove]
+
+	local mask = ffi.new('uint64_t', 1)
+
+	for directionIndex = startDirection, endDirection do
+		local isDiagonal = directionIndex > 4
+		local isFriendlyPieceAlongRay = false
+		local rayMask = ffi.new('uint64_t', 0)
+
+		for n = 1, self.numSquaresToEdge[friendlyKingSquare][directionIndex] do
+			local square = friendlyKingSquare + self.slidingOffsets[directionIndex] * n
+			local piece = B.P[square]
+			rayMask = bor(rayMask, lshift(mask, square - 1))
+
+			if piece ~= 0 then
+				if piece.color == B.colorToMove then
+					if not isFriendlyPieceAlongRay then -- first friendly piece on ray; might be pinned
+						isFriendlyPieceAlongRay = true
+					else 								-- second friendly piece on ray; no pin
+						break
+					end
+				else
+					if (isDiagonal and piece:isBishop()) or (not isDiagonal and piece:isRook()) or piece:isQueen() then
+						if isFriendlyPieceAlongRay then
+							self.pinsExist = true
+							self.pinRayBitMask = bor(self.pinRayBitMask, rayMask)
+						else
+							self.checkRayBitMask = bor(self.checkRayBitMask, rayMask)
+							self.inDoubleCheck = self.inCheck
+							self.inCheck = true
+						end
+						break
+					else
+						break							-- piece cannot move along ray
+					end
+				end
+			end
+		end
+		if self.inDoubleCheck then
+			break
+		end
+	end
+
 	self:calculateKnightAttackData()
 	self:calculatePawnAttackData()
-
-	-- print(tobinaryboard(self.slidingAttackMap))
-	-- print(tobinaryboard(self.knightAttackMap))
-	-- print(tobinaryboard(self.pawnAttackMap))
 
 	self.noPawnsAttackMap = bor(self.slidingAttackMap, self.knightAttackMap)
 	self.attackMap = bor(self.noPawnsAttackMap, self.pawnAttackMap)

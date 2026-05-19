@@ -71,8 +71,8 @@ function Board:init()
 	self.attackMap[1] = 0
 	self.attackMap[-1] = 0
 
-	-- self:fenToPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
-	self:fenToPosition('r3k2r/8/8/8/8/8/8/R3K2R')
+	self:fenToPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
+	-- self:fenToPosition('r3k2r/8/8/8/8/8/8/R3K2R')
 	-- self:fenToPosition('rnbqk2r/ppppPppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 	-- self:fenToPosition('r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R')
 end
@@ -206,12 +206,10 @@ function Board:makeMove(startSquare, endSquare, flag)
 	]]
 
 	if flag == 'double push' then
-		-- set en passant square
 		local pushDirection = self.colorToMove
 		self.enpassantSquare = endSquare - (8 * pushDirection)
 	end
 	if flag == 'en passant' then
-		-- remove captured pawn
 		local pushDirection = self.colorToMove
 		self.P[endSquare - (8 * pushDirection)] = 0
 
