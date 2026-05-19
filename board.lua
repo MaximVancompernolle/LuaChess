@@ -20,7 +20,9 @@ function Board:init()
 	self.ply = 0
 	self.colorToMove = 1 -- WHITE = 1, black = -1
 	self.enpassantSquare = nil
-	self.castlingRights = {K = true, Q = true, k = true, q = true}
+	self.castlingRights = {}
+	self.castlingRights[1] = {K = true, Q = true}
+	self.castlingRights[-1] = {K = true, Q = true}
 
 	self.selected = 0
 	self.highlighted = {}
