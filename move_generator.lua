@@ -41,6 +41,9 @@ function MoveGenerator:init()
 	self.slidingOffsets = {8, -8, -1, 1, 7, -7, 9, -9} -- N, S, W, E, NW, SE, NE, SW
 	self.numSquaresToEdge = {}
 
+	self.kingMoves = {}
+	self.kingAttackBitBoards = {}
+
 	self.knightMoves = {}
 	self.knightAttackBitBoards = {}
 
@@ -52,8 +55,6 @@ function MoveGenerator:init()
 end
 
 function MoveGenerator:generateMoves()
-	-- B:printAllPieceLists()
-
 	self.M = {}
 
 	self:calculateAttackData()
@@ -296,9 +297,9 @@ end
 
 function MoveGenerator:calculateKnightAttackData()
 	self.knightAttackMap = ffi.new('uint64_t', 0)
-	-- self.knightCheck = false
+	self.inKnightCheck = false
 
-	-- local mask = ffi.new('uint64_t', 1)
+	local mask = ffi.new('uint64_t', 1)
 	local opponentColor = B.colorToMove * -1
 	local knights = B.knights[opponentColor]
 
@@ -306,20 +307,20 @@ function MoveGenerator:calculateKnightAttackData()
 		local startSquare = knights[i]
 		self.knightAttackMap = bor(self.knightAttackMap, self.knightAttackBitBoards[startSquare])
 
-		-- TODO calculate if king in check
-		-- if not self.knightCheck and containsSquare(self.knightAttackMap, B.kings[B.colorToMove]) then
-		-- 	self.knightCheck = true
-		-- 	self.doubleCheck = self.check
-		-- 	self.check = true
-		-- 	-- self.checkRayBitMask = bor(self.checkRayBitMask, lshift(mask, startSquare - 1))
-		-- end
+		if not self.inKnightCheck and containsSquare(self.knightAttackMap, B.kings[B.colorToMove]) then
+			self.inKnightCheck = true
+			self.inDoubleCheck = self.inCheck
+			self.inCheck = true
+			self.checkRayBitMask = bor(self.checkRayBitMask, lshift(mask, startSquare - 1))
+		end
 	end
 end
 
 function MoveGenerator:calculatePawnAttackData()
 	self.pawnAttackMap = ffi.new('uint64_t', 0)
-	-- self.pawnCheck = false
+	self.inPawnCheck = false
 
+	local mask = ffi.new('uint64_t', 1)
 	local opponentColor = B.colorToMove * -1
 	local pawns = B.pawns[opponentColor]
 
@@ -327,7 +328,12 @@ function MoveGenerator:calculatePawnAttackData()
 		local startSquare = pawns[i]
 		self.pawnAttackMap = bor(self.pawnAttackMap, self.pawnAttackBitBoards[opponentColor][startSquare])
 
-		-- TODO calculate if king in check
+		if not self.inPawnCheck and containsSquare(self.pawnAttackMap, B.kings[B.colorToMove]) then
+			self.inPawnCheck = true
+			self.inDoubleCheck = self.inCheck
+			self.inCheck = true
+			self.checkRayBitMask = bor(self.checkRayBitMask, lshift(mask, startSquare - 1))
+		end
 	end
 end
 
@@ -421,7 +427,6 @@ function MoveGenerator:precomputedMoveData()
 
 			self.knightMoves[index] = {}
 			local knightBitBoard = ffi.new('uint64_t', 0)
-			
 			for offsetIndex = 1, #knightOffsets do
 				local knightEndSquare = index + knightOffsets[offsetIndex]
 				if knightEndSquare >= 1 and knightEndSquare <= 64 then
@@ -434,12 +439,26 @@ function MoveGenerator:precomputedMoveData()
 					end
 				end
 			end
-
 			self.knightAttackBitBoards[index] = knightBitBoard
+
+			self.kingMoves[index] = {}
+			local kingBitBoard = ffi.new('uint64_t', 0)
+			for offsetIndex = 1, #self.slidingOffsets do
+				local kingEndSquare = index + self.slidingOffsets[offsetIndex]
+				if kingEndSquare >= 1 and kingEndSquare <= 64 then
+					local kingSquareX = ((kingEndSquare - 1) % 8) + 1
+					local kingSquareY = math.floor((kingEndSquare - 1) / 8) + 1
+
+					if math.max(math.abs(file - kingSquareX), math.abs(rank - kingSquareY)) == 1 then
+						table.insert(self.kingMoves[index], kingEndSquare)
+						kingBitBoard = bor(kingBitBoard, lshift(mask, kingEndSquare - 1))
+					end
+				end
+			end
+			self.kingAttackBitBoards[index] = kingBitBoard
 
 			local pawnBitBoardWhite = ffi.new('uint64_t', 0)
 			local pawnBitBoardBlack = ffi.new('uint64_t', 0)
-
 			if file > 1 then
 				if rank < 8 then
 					pawnBitBoardWhite = bor(pawnBitBoardWhite, lshift(mask, index + 6))
@@ -456,7 +475,6 @@ function MoveGenerator:precomputedMoveData()
 					pawnBitBoardBlack = bor(pawnBitBoardBlack, lshift(mask, index - 8))
 				end
 			end
-
 			self.pawnAttackBitBoards[1][index] = pawnBitBoardWhite
 			self.pawnAttackBitBoards[-1][index] = pawnBitBoardBlack
 		end
