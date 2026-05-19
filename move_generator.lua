@@ -72,11 +72,13 @@ function MoveGenerator:generateMoves(board, includeQuietMoves)
 	self:calculateAttackData()
 	self:generateKingMoves()
 
-	if self.inDoubleCheck then return moves end
+	if self.inDoubleCheck then return self.moves end
 
-	-- self:generateSlidingMoves()
-	-- self:generateKnightMoves()
-	-- self:generatePawnMoves()
+	self:generateSlidingMoves()
+	self:generateKnightMoves()
+	self:generatePawnMoves()
+
+	return self.moves
 end
 
 function MoveGenerator:generateKingMoves()
@@ -114,6 +116,35 @@ function MoveGenerator:generateKingMoves()
 		end
 
 		::continue::
+	end
+end
+
+function MoveGenerator:generateSlidingMoves()
+	local queens = self.B.queens[self.friendlyColor]
+	for i = 1, queens.numPieces do
+		self:generateSlidingPieceMoves(queens[i], 1, 8)
+	end
+
+	local rooks = self.B.rooks[self.friendlyColor]
+	for i = 1, rooks.numPieces do
+		self:generateSlidingPieceMoves(rooks[i], 1, 4)
+	end
+
+	local bishops = self.B.bishops[self.friendlyColor]
+	for i = 1, bishops.numPieces do
+		self:generateSlidingPieceMoves(bishops[i], 5, 8)
+	end
+end
+
+function MoveGenerator:generateSlidingPieceMoves(startSquare, startDirection, endDirection)
+	local isPinned = self:isSquarePinned(startSquare)
+
+	if self.inCheck and isPinned then return end
+
+	for directionIndex = startDirection, endDirection do
+		for n = 1, self.numSquaresToEdge[startSquare][directionIndex] do
+			local endSquare = startSquare + self.slidingOffsets[directionIndex] * n
+		end
 	end
 end
 
@@ -176,19 +207,18 @@ end
 
 function MoveGenerator:calculateSlidingAttackData()
 	self.slidingAttackMap = ffi.new('uint64_t', 0)
-	local opponentColor = B.colorToMove * -1
 
-	local queens = B.queens[opponentColor]
+	local queens = self.B.queens[self.opponentColor]
 	for i = 1, queens.numPieces do
 		self:calculateSlidingAttackPiece(queens[i], 1, 8)
 	end
 
-	local rooks = B.rooks[opponentColor]
+	local rooks = self.B.rooks[self.opponentColor]
 	for i = 1, rooks.numPieces do
 		self:calculateSlidingAttackPiece(rooks[i], 1, 4)
 	end
 
-	local bishops = B.bishops[opponentColor]
+	local bishops = self.B.bishops[self.opponentColor]
 	for i = 1, bishops.numPieces do
 		self:calculateSlidingAttackPiece(bishops[i], 5, 8)
 	end
@@ -260,6 +290,13 @@ end
 
 function MoveGenerator:isSquareInCheckRay(square)
 	return self.inCheck and containsSquare(self.checkRayBitMask, square)
+end
+
+function MoveGenerator:isSquarePinned(square)
+	return self.pinsExist and containsSquare(self.pinRayBitMask, square)
+end
+
+function MoveGenerator:isAlongRay()
 end
 
 function MoveGenerator:printMoves()
