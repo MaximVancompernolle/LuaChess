@@ -51,6 +51,10 @@ function MoveGenerator:init()
 	self.pawnAttackBitBoards[1] = {}
 	self.pawnAttackBitBoards[-1] = {}
 
+	self.bishopMoves = {}
+	self.rookMoves = {}
+	self.queenMoves = {}
+
 	self:precomputedMoveData()
 end
 
@@ -477,6 +481,26 @@ function MoveGenerator:precomputedMoveData()
 			end
 			self.pawnAttackBitBoards[1][index] = pawnBitBoardWhite
 			self.pawnAttackBitBoards[-1][index] = pawnBitBoardBlack
+
+			local rookBitBoard = ffi.new('uint64_t', 0)
+			for directionIndex = 1, 4 do
+				for n = 1, self.numSquaresToEdge[index][directionIndex] do
+					local rookEndSquare = index + self.slidingOffsets[directionIndex] * n
+					rookBitBoard = bor(rookBitBoard, lshift(mask, rookEndSquare - 1))
+				end
+			end
+			self.rookMoves[index] = rookBitBoard
+
+			local bishopBitBoard = ffi.new('uint64_t', 0)
+			for directionIndex = 5, 8 do
+				for n = 1, self.numSquaresToEdge[index][directionIndex] do
+					local bishopEndSquare = index + self.slidingOffsets[directionIndex] * n
+					bishopBitBoard = bor(bishopBitBoard, lshift(mask, bishopEndSquare - 1))
+				end
+			end
+			self.bishopMoves[index] = bishopBitBoard
+
+			self.queenMoves[index] = bor(rookBitBoard, bishopBitBoard)
 		end
 	end
 end
