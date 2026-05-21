@@ -5,20 +5,11 @@ require 'piece_list'
 ---@class Board
 Board = Object:extend()
 
---[[
-	TODO store squares attacked by each side
-	used for captures, checks, and castling
-
-	64 bit number 1 for attacked and 0 for not attacked
-	OR
-	64 x 4 bit number storing # of attacks on each square
-	15 max FEN 8/4n3/1nqrbn2/2qPr3/1nqqkn2/2n1n3/8/K7 w - - 0 1
-]]
-
 function Board:init()
 	-- board state information
 	self.ply = 0
 	self.colorToMove = 1 -- WHITE = 1, black = -1
+	self.opponentColor = -1
 	self.enpassantSquare = nil
 	self.castlingRights = {}
 	self.castlingRights[1] = {K = true, Q = true}
@@ -33,32 +24,35 @@ function Board:init()
 		self.P[i] = 0
 	end
 
-	-- piece list stuff
-	-- can definitely clean this up
+	self.kings = {
+		[1] = nil,
+		[-1] = nil,
+	}
 
-	self.kings = {}
-	self.kings[1] = nil
-	self.kings[-1] = nil
+	self.pawns = {
+		[1] = PieceList(),
+		[-1] = PieceList(),
+	}
 
-	self.pawns = {}
-	self.pawns[1] = PieceList()
-	self.pawns[-1] = PieceList()
+	self.knights = {
+		[1] = PieceList(),
+		[-1] = PieceList(),
+	}
 
-	self.knights = {}
-	self.knights[1] = PieceList()
-	self.knights[-1] = PieceList()
+	self.bishops = {
+		[1] = PieceList(),
+		[-1] = PieceList(),
+	}
 
-	self.bishops = {}
-	self.bishops[1] = PieceList()
-	self.bishops[-1] = PieceList()
+	self.rooks = {
+		[1] = PieceList(),
+		[-1] = PieceList(),
+	}
 
-	self.rooks = {}
-	self.rooks[1] = PieceList()
-	self.rooks[-1] = PieceList()
-
-	self.queens = {}
-	self.queens[1] = PieceList()
-	self.queens[-1] = PieceList()
+	self.queens = {
+		[1] = PieceList(),
+		[-1] = PieceList(),
+	}
 
 	self.allPieceLists = {
 		k = self.kings,
@@ -69,9 +63,10 @@ function Board:init()
 		q = self.queens,
 	}
 
-	self.attackMap = {}
-	self.attackMap[1] = 0
-	self.attackMap[-1] = 0
+	self.attackMap = {
+		[1] = 0,
+		[-1] = 0,
+	}
 
 	self:fenToPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 	-- self:fenToPosition('r3k2r/8/8/8/8/8/8/R3K2R')
@@ -254,26 +249,26 @@ function Board:makeMove(startSquare, endSquare, flag)
 	end
 
 	self.P[endSquare].hasMoved = true
-	self.colorToMove = self.colorToMove * -1
+	self.colorToMove, self.opponentColor = self.opponentColor, self.colorToMove
 	MG:generateMoves()
 end
 
 function Board:printAllPieceLists()
 	print('white')
 	print('king: ' .. self.kings[1])
-	-- print('pawns: ' .. self.pawns[1]:tostring())
-	-- print('knights: ' .. self.knights[1]:tostring())
-	-- print('bishops: ' .. self.bishops[1]:tostring())
+	print('pawns: ' .. self.pawns[1]:tostring())
+	print('knights: ' .. self.knights[1]:tostring())
+	print('bishops: ' .. self.bishops[1]:tostring())
 	print('rooks: ' .. self.rooks[1]:tostring())
-	-- print('queens: ' .. self.queens[1]:tostring())
+	print('queens: ' .. self.queens[1]:tostring())
 
 	print('black')
 	print('king: ' .. self.kings[-1])
-	-- print('pawns: ' .. self.pawns[-1]:tostring())
-	-- print('knights: ' .. self.knights[-1]:tostring())
-	-- print('bishops: ' .. self.bishops[-1]:tostring())
+	print('pawns: ' .. self.pawns[-1]:tostring())
+	print('knights: ' .. self.knights[-1]:tostring())
+	print('bishops: ' .. self.bishops[-1]:tostring())
 	print('rooks: ' .. self.rooks[-1]:tostring())
-	-- print('queens: ' .. self.queens[-1]:tostring())
+	print('queens: ' .. self.queens[-1]:tostring())
 end
 
 function Board:clearSquares()
@@ -305,6 +300,6 @@ function Board:draw()
 		local cur = self.P[i]
 		local px, py = pixelFromIndex(i)
 
-		if cur ~= 0 then love.graphics.draw(BH.I[cur.type].image, px, py, 0, 2/3, 2/3) end
+		if cur ~= 0 then love.graphics.draw(imageForPiece(cur), px, py, 0, 2/3, 2/3) end
 	end
 end
