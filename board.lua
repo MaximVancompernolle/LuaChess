@@ -95,7 +95,7 @@ function Board:fenToPosition(fen)
 			file = 1
 		else
 			local index = file + ((rank - 1) * 8)
-			local piece = Piece(cur)
+			local piece = Piece.new(cur)
 			self:addPieceToBitBoard(piece, index)
 			self.P[index] = piece
 			file = file + 1
@@ -108,20 +108,21 @@ function Board:positionToFen()
 end
 
 function Board:addPieceToBitBoard(piece, square)
-	local color = piece.color
+	local pieceType = Piece.type(piece)
+	local colorIndex = Piece.colorIndex(piece)
 
-	if piece:isPawn() then
-		self.pawns[color]:addPieceAtSquare(square)
-	elseif piece:isRook() then
-		self.rooks[color]:addPieceAtSquare(square)
-	elseif piece:isKnight() then
-		self.knights[color]:addPieceAtSquare(square)
-	elseif piece:isBishop() then
-		self.bishops[color]:addPieceAtSquare(square)
-	elseif piece:isQueen() then
-		self.queens[color]:addPieceAtSquare(square)
-	else
-		self.kings[color] = square
+	if pieceType == Piece.PAWN then
+		self.pawns[colorIndex]:addPieceAtSquare(square)
+	elseif pieceType == Piece.KNIGHT then
+		self.knights[colorIndex]:addPieceAtSquare(square)
+	elseif pieceType == Piece.BISHOP then
+		self.bishops[colorIndex]:addPieceAtSquare(square)
+	elseif pieceType == Piece.ROOK then
+		self.rooks[colorIndex]:addPieceAtSquare(square)
+	elseif pieceType == Piece.QUEEN then
+		self.queens[colorIndex]:addPieceAtSquare(square)
+	elseif pieceType == Piece.KING then
+		self.kings[colorIndex] = square
 	end
 end
 
