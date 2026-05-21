@@ -1,4 +1,5 @@
 require 'misc_functions'
+require 'precomputed_move_data'
 
 local ffi = require('ffi')
 local bit = require('bit')
@@ -7,25 +8,6 @@ local lshift, rshift = bit.lshift, bit.rshift
 
 ---@class MoveGenerator
 MoveGenerator = Object:extend()
-
---[[
-	TODO represent move as binary object
-	bit 0-5: startSquare
-	bit 6-11: endSquare
-	bit 12-15: flag
-
-	flag values
-	none = 0
-	enpassant = 1
-	castling = 2
-	promote queen = 3
-	promote knight = 4
-	promote rook = 5
-	promote bishop = 6
-	double push = 7
-]]
-
--- TODO should we keep track of opponent color in Board instead of recalculating it with colorToMove * -1 ?
 
 function MoveGenerator:init()
 	-- self.opponentAttackMap = nil -- bit board of all squares attacked by opponent
@@ -76,17 +58,17 @@ function MoveGenerator:generateMoves(board, includeQuietMoves)
 
 	self:generateSlidingMoves()
 	self:generateKnightMoves()
-	self:generatePawnMoves()
+	-- self:generatePawnMoves()
 
 	return self.moves
 end
 
 function MoveGenerator:generateKingMoves()
-	for i = 1, #self.kingMoves[self.friendlyKingSquare] do
-		local endSquare = self.kingMoves[self.friendlyKingSquare][i]
+	for i = 1, #kingMoves[self.friendlyKingSquare] do
+		local endSquare = kingMoves[self.friendlyKingSquare][i]
 		local pieceOnEndSquare = self.B.P[endSquare]
 
-		if pieceOnEndSquare.color == self.friendlyColor then goto continue end
+		if Piece.colorIndex(pieceOnEndSquare) == self.friendlyColor then goto continue end
 
 		local isCapture = (pieceOnEndSquare.color == self.opponentColor)
 		if not isCapture then
@@ -140,15 +122,15 @@ function MoveGenerator:generateSlidingPieceMoves(startSquare, startDirection, en
 	if self.inCheck and isPinned then return end
 
 	for directionIndex = startDirection, endDirection do
-		local directionOffset = self.slidingOffsets[directionIndex]
+		local directionOffset = slidingOffsets[directionIndex]
 
 		if isPinned and not self:isAlongRay(directionOffset, self.friendlyKingSquare, startSquare) then goto continue end
 
-		for n = 1, self.numSquaresToEdge[startSquare][directionIndex] do
+		for n = 1, numSquaresToEdge[startSquare][directionIndex] do
 			local endSquare = startSquare + directionOffset * n
 			local pieceOnEndSquare = self.B.P[endSquare]
 
-			if pieceOnEndSquare.color == self.friendlyColor then break end
+			if Piece.colorIndex(pieceOnEndSquare) == self.friendlyColor then break end
 
 			local isCapture = pieceOnEndSquare ~= 0
 			local movePreventsCheck = self:isSquareInCheckRay(endSquare)
@@ -174,12 +156,12 @@ function MoveGenerator:generateKnightMoves()
 
 		if self:isSquarePinned(startSquare) then goto continue end
 
-		local knightMoves = self.knightMoves[startSquare]
+		local knightMoves = knightMoves[startSquare]
 		for m = 1, #knightMoves do
 			local endSquare = knightMoves[m]
 			local pieceOnEndSquare = self.B.P[endSquare]
 
-			if pieceOnEndSquare.color == self.friendlyColor then break end
+			if Piece.colorIndex(pieceOnEndSquare) == self.friendlyColor then break end
 
 			local isCapture = pieceOnEndSquare ~= 0
 		end
@@ -195,8 +177,6 @@ function MoveGenerator:calculateAttackData()
 	local startDirection = 1
 	local endDirection = 8
 
-	local friendlyKingSquare = B.kings[B.colorToMove]
-
 	local mask = ffi.new('uint64_t', 1)
 
 	for directionIndex = startDirection, endDirection do
@@ -204,20 +184,20 @@ function MoveGenerator:calculateAttackData()
 		local isFriendlyPieceAlongRay = false
 		local rayMask = ffi.new('uint64_t', 0)
 
-		for n = 1, self.numSquaresToEdge[friendlyKingSquare][directionIndex] do
-			local square = friendlyKingSquare + self.slidingOffsets[directionIndex] * n
-			local piece = B.P[square]
+		for n = 1, numSquaresToEdge[self.friendlyKingSquare][directionIndex] do
+			local square = self.friendlyKingSquare + slidingOffsets[directionIndex] * n
+			local piece = self.B.P[square]
 			rayMask = bor(rayMask, lshift(mask, square - 1))
 
 			if piece ~= 0 then
-				if piece.color == B.colorToMove then
+				if Piece.colorIndex(piece) == self.friendlyColor then
 					if not isFriendlyPieceAlongRay then -- first friendly piece on ray; might be pinned
 						isFriendlyPieceAlongRay = true
 					else 								-- second friendly piece on ray; no pin
 						break
 					end
 				else
-					if (isDiagonal and piece:isBishop()) or (not isDiagonal and piece:isRook()) or piece:isQueen() then
+					if (isDiagonal and Piece.isBishopOrQueen(piece)) or (not isDiagonal and Piece.isRookOrQueen(piece)) then
 						if isFriendlyPieceAlongRay then
 							self.pinsExist = true
 							self.pinRayBitMask = bor(self.pinRayBitMask, rayMask)
@@ -267,13 +247,13 @@ end
 function MoveGenerator:calculateSlidingAttackPiece(startSquare, startDirection, endDirection)
 	local mask = ffi.new('uint64_t', 1)
 	for directionIndex = startDirection, endDirection do
-		for n = 1, self.numSquaresToEdge[startSquare][directionIndex] do
-			local endSquare = startSquare + self.slidingOffsets[directionIndex] * n
-			local pieceOnEndSquare = B.P[endSquare]
+		for n = 1, numSquaresToEdge[startSquare][directionIndex] do
+			local endSquare = startSquare + slidingOffsets[directionIndex] * n
+			local pieceOnEndSquare = self.B.P[endSquare]
 
 			self.slidingAttackMap = bor(self.slidingAttackMap, lshift(mask, endSquare - 1))
 
-			if endSquare ~= B.kings[B.colorToMove] then
+			if endSquare ~= self.friendlyKingSquare then
 				if pieceOnEndSquare ~= 0 then
 					break
 				end
@@ -287,14 +267,13 @@ function MoveGenerator:calculateKnightAttackData()
 	self.inKnightCheck = false
 
 	local mask = ffi.new('uint64_t', 1)
-	local opponentColor = B.colorToMove * -1
-	local knights = B.knights[opponentColor]
+	local knights = self.B.knights[self.opponentColor]
 
 	for i = 1, knights.numPieces do
 		local startSquare = knights[i]
-		self.knightAttackMap = bor(self.knightAttackMap, self.knightAttackBitBoards[startSquare])
+		self.knightAttackMap = bor(self.knightAttackMap, knightAttackBitBoards[startSquare])
 
-		if not self.inKnightCheck and containsSquare(self.knightAttackMap, B.kings[B.colorToMove]) then
+		if not self.inKnightCheck and containsSquare(self.knightAttackMap, self.friendlyKingSquare) then
 			self.inKnightCheck = true
 			self.inDoubleCheck = self.inCheck
 			self.inCheck = true
@@ -308,14 +287,13 @@ function MoveGenerator:calculatePawnAttackData()
 	self.inPawnCheck = false
 
 	local mask = ffi.new('uint64_t', 1)
-	local opponentColor = B.colorToMove * -1
-	local pawns = B.pawns[opponentColor]
+	local pawns = self.B.pawns[self.opponentColor]
 
 	for i = 1, pawns.numPieces do
 		local startSquare = pawns[i]
-		self.pawnAttackMap = bor(self.pawnAttackMap, self.pawnAttackBitBoards[opponentColor][startSquare])
+		self.pawnAttackMap = bor(self.pawnAttackMap, pawnAttackBitBoards[self.opponentColor][startSquare])
 
-		if not self.inPawnCheck and containsSquare(self.pawnAttackMap, B.kings[B.colorToMove]) then
+		if not self.inPawnCheck and containsSquare(self.pawnAttackMap, self.friendlyKingSquare) then
 			self.inPawnCheck = true
 			self.inDoubleCheck = self.inCheck
 			self.inCheck = true
@@ -337,7 +315,7 @@ function MoveGenerator:isSquarePinned(square)
 end
 
 function MoveGenerator:isAlongRay(rayDirection, startSquare, endSquare)
-	local moveDirection = self.rayLookup[endSquare - startSquare + 64]
+	local moveDirection = rayLookup[endSquare - startSquare + 64]
 	return (rayDirection == moveDirection) or (-1 * rayDirection == moveDirection)
 end
 

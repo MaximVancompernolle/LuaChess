@@ -23,8 +23,9 @@ function love.load()
 
 	G = Game()
 	B = Board()
+	precomputeMoveData()
 	MG = MoveGenerator()
-	MG:generateMoves()
+	MG:generateMoves(B, true)
 end
 
 function love.update(dt)
