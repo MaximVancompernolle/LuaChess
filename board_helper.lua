@@ -18,6 +18,41 @@ for _, filename in ipairs(imageFiles) do
 	end
 end
 
+function imageForPiece(piece)
+	local color = Piece.color(piece)
+	local type = Piece.type(piece)
+	
+	if color == Piece.WHITE then
+		if type == Piece.PAWN then
+			return BH.I['P'].image
+		elseif type == Piece.KNIGHT then
+			return BH.I['N'].image
+		elseif type == Piece.BISHOP then
+			return BH.I['B'].image
+		elseif type == Piece.ROOK then
+			return BH.I['R'].image
+		elseif type == Piece.QUEEN then
+			return BH.I['Q'].image
+		elseif type == Piece.KING then
+			return BH.I['K'].image
+		end
+	elseif color == Piece.BLACK then
+		if type == Piece.PAWN then
+			return BH.I['p'].image
+		elseif type == Piece.KNIGHT then
+			return BH.I['n'].image
+		elseif type == Piece.BISHOP then
+			return BH.I['b'].image
+		elseif type == Piece.ROOK then
+			return BH.I['r'].image
+		elseif type == Piece.QUEEN then
+			return BH.I['q'].image
+		elseif type == Piece.KING then
+			return BH.I['k'].image
+		end
+	end
+end
+
 local startingFEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
 -- double check positions
