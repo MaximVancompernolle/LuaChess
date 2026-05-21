@@ -6,21 +6,41 @@ local lshift, rshift = bit.lshift, bit.rshift
 ---@Class Piece
 Piece = Object:extend()
 
-NONE = 0
-KING = 1
-PAWN = 2
-KNIGHT = 3
-BISHOP = 5
-ROOK = 6
-QUEEN = 7
+Piece.NONE = 0
+Piece.KING = 1
+Piece.PAWN = 2
+Piece.KNIGHT = 3
+Piece.BISHOP = 5
+Piece.ROOK = 6
+Piece.QUEEN = 7
 
-WHITE = 8
-BLACK = 16
+local pieceFromSymbol = {
+	['k'] = Piece.KING,
+	['p'] = Piece.PAWN,
+	['n'] = Piece.KNIGHT,
+	['b'] = Piece.BISHOP,
+	['r'] = Piece.ROOK,
+	['q'] = Piece.QUEEN,
+}
 
-typeMask = ffi.new('uint8_t', 7)
-whiteMask = ffi.new('uint8_t', 8)
-blackMask = ffi.new('uint8_t', 16)
+Piece.WHITE = 8
+Piece.BLACK = 16
+
+typeMask = ffi.new('uint16_t', 7)
+whiteMask = ffi.new('uint16_t', 8)
+blackMask = ffi.new('uint16_t', 16)
 colorMask = bor(whiteMask, blackMask)
+
+function Piece.new(char)
+	local piece = pieceFromSymbol[char:lower()]
+	if string.byte(char) <= 90 then
+		piece = piece + Piece.WHITE
+	else
+		piece = piece + Piece.BLACK
+	end
+
+	return piece
+end
 
 function Piece.isColor(piece, color)
 	return band(piece, colorMask) == color
@@ -28,6 +48,13 @@ end
 
 function Piece.color(piece)
 	return band(piece, colorMask)
+end
+
+function Piece.colorIndex(piece)
+	local color = Piece.color(piece)
+
+	if color == Piece.WHITE then return 1 end
+	if color == Piece.BLACK then return -1 end
 end
 
 function Piece.type(piece)
