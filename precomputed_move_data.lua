@@ -96,4 +96,20 @@ function MoveGenerator:precomputedMoveData()
 			self.queenMoves[index] = bor(rookBitBoard, bishopBitBoard)
 		end
 	end
+
+	for i = 1, 126 do
+		local offset = i - 64
+		local absOffset = math.abs(offset)
+		local absDir = 1
+
+		if absOffset % 9 == 0 then
+			absDir = 9
+		elseif absOffset % 8 == 0 then
+			absDir = 8
+		elseif absOffset % 7 == 0 then
+			absDir = 7
+		end
+
+		self.rayLookup[i] = absDir * sign(offset)
+	end
 end
