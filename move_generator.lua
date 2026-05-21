@@ -82,10 +82,8 @@ function MoveGenerator:generateMoves(board, includeQuietMoves)
 end
 
 function MoveGenerator:generateKingMoves()
-	local friendlyKingSquare = self.B.kings[self.friendlyColor]
-
-	for i = 1, #self.kingMoves[friendlyKingSquare] do
-		local endSquare = self.kingMoves[friendlyKingSquare][i]
+	for i = 1, #self.kingMoves[self.friendlyKingSquare] do
+		local endSquare = self.kingMoves[self.friendlyKingSquare][i]
 		local pieceOnEndSquare = self.B.P[endSquare]
 
 		if pieceOnEndSquare.color == self.friendlyColor then goto continue end
@@ -96,20 +94,20 @@ function MoveGenerator:generateKingMoves()
 		end
 
 		if not self:isSquareAttacked(endSquare) then
-			table.insert(self.moves, {friendlyKingSquare, endSquare})
+			table.insert(self.moves, {self.friendlyKingSquare, endSquare})
 
 			if not self.inCheck and not isCapture then
 				if (endSquare == 6 or endSquare == 62) and self.B.castlingRights[self.friendlyColor]['K'] then
 					local kingsideCastleSquare = endSquare + 1
 
 					if self.B.P[kingsideCastleSquare] == 0 and not self:isSquareAttacked(kingsideCastleSquare) then
-						table.insert(self.moves, {friendlyKingSquare, kingsideCastleSquare, 'O-O'})
+						table.insert(self.moves, {self.friendlyKingSquare, kingsideCastleSquare, 'O-O'})
 					end
 				elseif (endSquare == 4 or endSquare == 60) and self.B.castlingRights[self.friendlyColor]['Q'] then
 					local queensideCastleSquare = endSquare - 1
 
 					if self.B.P[queensideCastleSquare] == 0 and self.B.P[queensideCastleSquare - 1] == 0 and not self:isSquareAttacked(queensideCastleSquare) then
-						table.insert(self.moves, {friendlyKingSquare, queensideCastleSquare, 'O-O-O'})
+						table.insert(self.moves, {self.friendlyKingSquare, queensideCastleSquare, 'O-O-O'})
 					end
 				end
 			end
@@ -142,9 +140,29 @@ function MoveGenerator:generateSlidingPieceMoves(startSquare, startDirection, en
 	if self.inCheck and isPinned then return end
 
 	for directionIndex = startDirection, endDirection do
+		local directionOffset = self.slidingOffsets[directionIndex]
+
+		if isPinned and not self:isAlongRay(directionOffset, self.friendlyKingSquare, startSquare) then goto continue end
+
 		for n = 1, self.numSquaresToEdge[startSquare][directionIndex] do
-			local endSquare = startSquare + self.slidingOffsets[directionIndex] * n
+			local endSquare = startSquare + directionOffset * n
+			local pieceOnEndSquare = self.B.P[endSquare]
+
+			if pieceOnEndSquare.color == self.friendlyColor then break end
+
+			local isCapture = pieceOnEndSquare ~= 0
+			local movePreventsCheck = self:isSquareInCheckRay(endSquare)
+
+			if movePreventsCheck or not self.inCheck then
+				if self.generateQuietMoves or isCapture then
+					table.insert(self.moves, {startSquare, endSquare})
+				end
+			end
+
+			if isCapture or movePreventsCheck then break end
 		end
+
+		::continue::
 	end
 end
 
@@ -296,7 +314,9 @@ function MoveGenerator:isSquarePinned(square)
 	return self.pinsExist and containsSquare(self.pinRayBitMask, square)
 end
 
-function MoveGenerator:isAlongRay()
+function MoveGenerator:isAlongRay(rayDirection, startSquare, endSquare)
+	local moveDirection = self.rayLookup[endSquare - startSquare + 64]
+	return (rayDirection == moveDirection) or (-1 * rayDirection == moveDirection)
 end
 
 function MoveGenerator:printMoves()
