@@ -166,6 +166,28 @@ function MoveGenerator:generateSlidingPieceMoves(startSquare, startDirection, en
 	end
 end
 
+function MoveGenerator:generateKnightMoves()
+	local knights = self.B.knights[self.friendlyColor]
+
+	for i = 1, knights.numPieces do
+		local startSquare = knights[i]
+
+		if self:isSquarePinned(startSquare) then goto continue end
+
+		local knightMoves = self.knightMoves[startSquare]
+		for m = 1, #knightMoves do
+			local endSquare = knightMoves[m]
+			local pieceOnEndSquare = self.B.P[endSquare]
+
+			if pieceOnEndSquare.color == self.friendlyColor then break end
+
+			local isCapture = pieceOnEndSquare ~= 0
+		end
+
+		::continue::
+	end
+end
+
 function MoveGenerator:calculateAttackData()
 	self:calculateSlidingAttackData()
 
