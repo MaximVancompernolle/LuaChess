@@ -68,7 +68,9 @@ function Board:init()
 		[-1] = 0,
 	}
 
-	self:fenToPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
+	-- self:fenToPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
+	self:fenToPosition('rnbqkbnr/8/8/8/8/8/8/RNBQKBNR')
+	-- self:fenToPosition('4k3/8/8/8/8/8/8/4K3')
 	-- self:fenToPosition('r3k2r/8/8/8/8/8/8/R3K2R')
 	-- self:fenToPosition('rnbqk2r/ppppPppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 	-- self:fenToPosition('r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R')
@@ -136,16 +138,29 @@ function Board:toConsole()
 	end
 end
 
+-- function Board:trySelectSquare(x, y)
+-- 	local i = indexFromPixel(x, y)
+
+-- 	if self.P[i] == 0 or self.P[i].color ~= self.colorToMove then return end
+
+-- 	-- can this just store an index
+-- 	self.selected = {
+-- 		i = i,
+-- 		piece = self.P[i]
+-- 	}
+-- end
+
 function Board:trySelectSquare(x, y)
 	local i = indexFromPixel(x, y)
 
-	if self.P[i] == 0 or self.P[i].color ~= self.colorToMove then return end
-
-	-- can this just store an index
-	self.selected = {
-		i = i,
-		piece = self.P[i]
-	}
+	-- if self.P[i] == 0 or self.P[i].color ~= self.colorToMove then return end
+	if Piece.colorIndex(self.P[i]) == self.colorToMove then
+		-- can this just store an index
+		self.selected = {
+			i = i,
+			piece = self.P[i]
+		}
+	end
 end
 
 function Board:tryHighlightSquare(x, y)
