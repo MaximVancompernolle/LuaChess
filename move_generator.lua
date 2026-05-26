@@ -54,23 +54,30 @@ function MoveGenerator:generateMoves(board, includeQuietMoves)
 	self:calculateAttackData()
 	self:generateKingMoves()
 
-	if self.inDoubleCheck then return self.moves end
+	-- if self.inDoubleCheck then return self.moves end
+	if self.inDoubleCheck then
+		print('in double check')
+		return self.moves
+	end
 
 	self:generateSlidingMoves()
 	self:generateKnightMoves()
-	-- self:generatePawnMoves()
+	self:generatePawnMoves()
+
+	self:printMoves()
 
 	return self.moves
 end
 
 function MoveGenerator:generateKingMoves()
+	print('generating king moves')
 	for i = 1, #kingMoves[self.friendlyKingSquare] do
 		local endSquare = kingMoves[self.friendlyKingSquare][i]
 		local pieceOnEndSquare = self.B.P[endSquare]
 
 		if Piece.colorIndex(pieceOnEndSquare) == self.friendlyColor then goto continue end
 
-		local isCapture = (pieceOnEndSquare.color == self.opponentColor)
+		local isCapture = (Piece.colorIndex(pieceOnEndSquare) == self.opponentColor)
 		if not isCapture then
 			if self:isSquareInCheckRay(endSquare) then goto continue end
 		end
@@ -100,6 +107,7 @@ function MoveGenerator:generateKingMoves()
 end
 
 function MoveGenerator:generateSlidingMoves()
+	print('generating sliding moves')
 	local queens = self.B.queens[self.friendlyColor]
 	for i = 1, queens.numPieces do
 		self:generateSlidingPieceMoves(queens[i], 1, 8)
@@ -149,6 +157,7 @@ function MoveGenerator:generateSlidingPieceMoves(startSquare, startDirection, en
 end
 
 function MoveGenerator:generateKnightMoves()
+	print('generating knight moves')
 	local knights = self.B.knights[self.friendlyColor]
 
 	for i = 1, knights.numPieces do
@@ -164,13 +173,30 @@ function MoveGenerator:generateKnightMoves()
 			if Piece.colorIndex(pieceOnEndSquare) == self.friendlyColor then break end
 
 			local isCapture = pieceOnEndSquare ~= 0
+			local movePreventsCheck = self:isSquareInCheckRay(endSquare)
+
+			if movePreventsCheck or not self.inCheck then
+				if self.generateQuietMoves or isCapture then
+					table.insert(self.moves, {startSquare, endSquare})
+				end
+			end
 		end
 
 		::continue::
 	end
 end
 
+function MoveGenerator:generatePawnMoves()
+	print('generating pawn moves')
+	local pawns = self.B.pawns[self.friendlyColor]
+
+	for i = 1, pawns.numPieces do
+		local startSquare = pawns[i]
+	end
+end
+
 function MoveGenerator:calculateAttackData()
+	print('calculating attack data')
 	self:calculateSlidingAttackData()
 
 	-- TODO small optimization: if no queens and no rooks/bishops don't need to check all directions around the king
@@ -226,6 +252,7 @@ function MoveGenerator:calculateAttackData()
 end
 
 function MoveGenerator:calculateSlidingAttackData()
+	print('calculating sliding attack data')
 	self.slidingAttackMap = ffi.new('uint64_t', 0)
 
 	local queens = self.B.queens[self.opponentColor]
@@ -263,6 +290,7 @@ function MoveGenerator:calculateSlidingAttackPiece(startSquare, startDirection, 
 end
 
 function MoveGenerator:calculateKnightAttackData()
+	print('calculating knight attack data')
 	self.knightAttackMap = ffi.new('uint64_t', 0)
 	self.inKnightCheck = false
 
@@ -283,6 +311,7 @@ function MoveGenerator:calculateKnightAttackData()
 end
 
 function MoveGenerator:calculatePawnAttackData()
+	print('calculating pawn attack data')
 	self.pawnAttackMap = ffi.new('uint64_t', 0)
 	self.inPawnCheck = false
 
@@ -320,7 +349,7 @@ function MoveGenerator:isAlongRay(rayDirection, startSquare, endSquare)
 end
 
 function MoveGenerator:printMoves()
-	for k, v in pairs(self.M) do
+	for k, v in pairs(self.moves) do
 		s = v[1] .. ' -> ' .. v[2]
 
 		if v.flag then
@@ -345,7 +374,7 @@ end
 
 -- TODO move to different class, probably board_helper which should handle all visuals
 function MoveGenerator:drawPieceMoves(square)
-	for k, v in pairs(self.M) do
+	for k, v in pairs(self.moves) do
 		if v[1] == square then
 			local px, py = centerPixelFromIndex(v[2])
 
