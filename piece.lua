@@ -6,6 +6,30 @@ local lshift, rshift = bit.lshift, bit.rshift
 ---@Class Piece
 Piece = Object:extend()
 
+--[[
+	Piece values
+	standard
+	pawn	1
+	knight	3
+	bishop	3
+	rook	5
+	queen	9
+
+	by most squares attacked
+	pawn	2
+	knight	8
+	bishop	13
+	rook	14
+	queen	27
+
+	by average squares attacked
+	pawn	1.75
+	knight	5.25
+	bishop	8.75
+	rook	14
+	queen	22.75
+]]
+
 Piece.NONE = 0
 Piece.KING = 1
 Piece.PAWN = 2
