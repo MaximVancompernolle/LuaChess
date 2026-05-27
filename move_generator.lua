@@ -1,5 +1,6 @@
 require 'misc_functions'
 require 'precomputed_move_data'
+require 'board_representation'
 
 local ffi = require('ffi')
 local bit = require('bit')
@@ -54,7 +55,6 @@ function MoveGenerator:generateMoves(board, includeQuietMoves)
 	self:calculateAttackData()
 	self:generateKingMoves()
 
-	-- if self.inDoubleCheck then return self.moves end
 	if self.inDoubleCheck then
 		print('in double check')
 		return self.moves
@@ -78,6 +78,7 @@ function MoveGenerator:generateKingMoves()
 		if Piece.colorIndex(pieceOnEndSquare) == self.friendlyColor then goto continue end
 
 		local isCapture = (Piece.colorIndex(pieceOnEndSquare) == self.opponentColor)
+
 		if not isCapture then
 			if self:isSquareInCheckRay(endSquare) then goto continue end
 		end
@@ -110,16 +111,19 @@ function MoveGenerator:generateSlidingMoves()
 	print('generating sliding moves')
 	local queens = self.B.queens[self.friendlyColor]
 	for i = 1, queens.numPieces do
+		print('generating queen moves')
 		self:generateSlidingPieceMoves(queens[i], 1, 8)
 	end
 
 	local rooks = self.B.rooks[self.friendlyColor]
 	for i = 1, rooks.numPieces do
+		print('generating rook moves')
 		self:generateSlidingPieceMoves(rooks[i], 1, 4)
 	end
 
 	local bishops = self.B.bishops[self.friendlyColor]
 	for i = 1, bishops.numPieces do
+		print('generating bishop moves')
 		self:generateSlidingPieceMoves(bishops[i], 5, 8)
 	end
 end
@@ -132,7 +136,7 @@ function MoveGenerator:generateSlidingPieceMoves(startSquare, startDirection, en
 	for directionIndex = startDirection, endDirection do
 		local directionOffset = slidingOffsets[directionIndex]
 
-		if isPinned and not self:isAlongRay(directionOffset, self.friendlyKingSquare, startSquare) then goto continue end
+		if isPinned and not self:isAlongRay(directionOffset, startSquare, self.friendlyKingSquare) then goto continue end
 
 		for n = 1, numSquaresToEdge[startSquare][directionIndex] do
 			local endSquare = startSquare + directionOffset * n
@@ -140,10 +144,10 @@ function MoveGenerator:generateSlidingPieceMoves(startSquare, startDirection, en
 
 			if Piece.colorIndex(pieceOnEndSquare) == self.friendlyColor then break end
 
-			local isCapture = pieceOnEndSquare ~= 0
 			local movePreventsCheck = self:isSquareInCheckRay(endSquare)
+			local isCapture = pieceOnEndSquare ~= 0
 
-			if movePreventsCheck or not self.inCheck then
+			if not self.inCheck or movePreventsCheck then
 				if self.generateQuietMoves or isCapture then
 					table.insert(self.moves, {startSquare, endSquare})
 				end
@@ -170,12 +174,9 @@ function MoveGenerator:generateKnightMoves()
 			local endSquare = knightMoves[m]
 			local pieceOnEndSquare = self.B.P[endSquare]
 
-			if Piece.colorIndex(pieceOnEndSquare) == self.friendlyColor then break end
+			if Piece.colorIndex(pieceOnEndSquare) ~= self.friendlyColor and (not self.inCheck or self:isSquareInCheckRay(endSquare)) then
+				local isCapture = pieceOnEndSquare ~= 0
 
-			local isCapture = pieceOnEndSquare ~= 0
-			local movePreventsCheck = self:isSquareInCheckRay(endSquare)
-
-			if movePreventsCheck or not self.inCheck then
 				if self.generateQuietMoves or isCapture then
 					table.insert(self.moves, {startSquare, endSquare})
 				end
@@ -192,18 +193,52 @@ function MoveGenerator:generatePawnMoves()
 	local pushOffset = self.friendlyColor * 8
 	local enpassantSquare = self.B.enpassantSquare
 	
-	local startRank
+	local startRank										-- 0 indexed
 	if self.friendlyColor == 1 then
-		startRank = 2
+		startRank = 1
 	else
-		startRank = 7
+		startRank = 6
 	end
 
-	local rankBeforePromotion = 9 - startRank
+	local rankBeforePromotion = 7 - startRank			-- 0 indexed
 
 	for i = 1, pawns.numPieces do
 		local startSquare = pawns[i]
+		local rank = RankIndex(startSquare - 1)				-- 0 indexed
+		local resultsInPromotion = rank == rankBeforePromotion
+
+		if self.generateQuietMoves then
+			local pushSquare = startSquare + pushOffset
+
+			if self.B.P[pushSquare] == 0 then
+				if self:isSquarePinned(startSquare) and not self:isAlongRay(pushOffset, startSquare, self.friendlyKingSquare) then goto captures end
+
+				if not self.inCheck or self:isSquareInCheckRay(pushSquare) then
+					if resultsInPromotion then
+						self:generatePromotionMoves(startSquare, pushSquare)
+					else
+						table.insert(self.moves, {startSquare, pushSquare})
+					end
+				end
+
+				if rank == startRank then
+					local doublePushSquare = pushSquare + pushOffset
+
+					if self.B.P[doublePushSquare] == 0 then
+						if not self.inCheck or self:isSquareInCheckRay(doublePushSquare) then
+							table.insert(self.moves, {startSquare, doublePushSquare})
+						end
+					end
+				end
+			end
+		end
+
+		::captures::
+
 	end
+end
+
+function MoveGenerator:generatePromotionMoves(startSquare, endSquare)
 end
 
 function MoveGenerator:calculateAttackData()
