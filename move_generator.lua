@@ -189,6 +189,17 @@ end
 function MoveGenerator:generatePawnMoves()
 	print('generating pawn moves')
 	local pawns = self.B.pawns[self.friendlyColor]
+	local pushOffset = self.friendlyColor * 8
+	local enpassantSquare = self.B.enpassantSquare
+	
+	local startRank
+	if self.friendlyColor == 1 then
+		startRank = 2
+	else
+		startRank = 7
+	end
+
+	local rankBeforePromotion = 9 - startRank
 
 	for i = 1, pawns.numPieces do
 		local startSquare = pawns[i]
