@@ -11,6 +11,10 @@ pawnAttackBitBoards = {
 	[1] = {},
 	[-1] = {},
 }
+pawnAttackDirections = {
+	[1] = {5, 7},
+	[-1] = {6, 8},
+}
 knightMoves = {}
 knightAttackBitBoards = {}
 rookMoves = {}
