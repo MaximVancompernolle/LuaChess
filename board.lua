@@ -8,12 +8,16 @@ Board = Object:extend()
 function Board:init()
 	-- board state information
 	self.ply = 0
-	self.colorToMove = 1 -- WHITE = 1, black = -1
+
+	-- WHITE = 1, black = -1
+	self.colorToMove = 1
 	self.opponentColor = -1
+	
 	self.enpassantSquare = nil
-	self.castlingRights = {}
-	self.castlingRights[1] = {K = true, Q = true}
-	self.castlingRights[-1] = {K = true, Q = true}
+	self.castlingRights = {
+		[1] = {K = true, Q = true},
+		[-1] = {K = true, Q = true},
+	}
 
 	self.selected = 0
 	self.highlighted = {}
@@ -55,12 +59,12 @@ function Board:init()
 	}
 
 	self.allPieceLists = {
-		k = self.kings,
-		p = self.pawns,
-		n = self.knights,
-		b = self.bishops,
-		r = self.rooks,
-		q = self.queens,
+		[1] = self.kings,
+		[2] = self.pawns,
+		[3] = self.knights,
+		[5] = self.bishops,
+		[6] = self.rooks,
+		[7] = self.queens,
 	}
 
 	self.attackMap = {
@@ -68,12 +72,15 @@ function Board:init()
 		[-1] = 0,
 	}
 
-	self:fenToPosition('rnbqkbnr/ppp1pppp/8/8/8/p6p/PPP1pPPP/RNBQKBNR')
+	self:fenToPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 	-- self:fenToPosition('rnbqkbnr/8/8/8/8/8/8/RNBQKBNR')
+	-- self:fenToPosition('rnbqkbnr/ppp1pppp/8/8/8/p6p/PPP1pPPP/RNBQKBNR')
 	-- self:fenToPosition('4k3/8/8/8/8/8/8/4K3')
 	-- self:fenToPosition('r3k2r/8/8/8/8/8/8/R3K2R')
 	-- self:fenToPosition('rnbqk2r/ppppPppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 	-- self:fenToPosition('r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R')
+	-- self:fenToPosition('4k3/6b1/8/4pP2/8/2K5/8/8')
+	-- self:fenToPosition('4k3/8/8/1K2pP1r/8/8/8/8')
 end
 
 function Board:fenToPosition(fen)
@@ -181,7 +188,7 @@ end
 function Board:tryMovePiece(x, y)
 	local endSquare = indexFromPixel(x, y)
 
-	for _, move in pairs(MG.M) do
+	for _, move in pairs(MG.moves) do
 		if move[1] == self.selected.i and move[2] == endSquare then
 			self:makeMove(move[1], move[2], move.flag)
 		end
@@ -210,7 +217,7 @@ function Board:makeMove(startSquare, endSquare, flag)
 	local pieceToMove = self.P[startSquare]
 
 	self.enpassantSquare = nil
-	self.P[startSquare] = 0
+	self.P[startSquare] = Piece.NONE
 
 	if not flag then goto skipFlags end
 
@@ -249,23 +256,23 @@ function Board:makeMove(startSquare, endSquare, flag)
 	::skipFlags::
 
 	-- update piece list when piece is captured
-	if self.P[endSquare] ~= 0 then
+	if self.P[endSquare] ~= Piece.NONE then
 		local pieceToCapture = self.P[endSquare]
-		self.allPieceLists[pieceToCapture.type:lower()][pieceToCapture.color]:removePieceAtSquare(endSquare)
+		self.allPieceLists[Piece.type(pieceToCapture)][self.opponentColor]:removePieceAtSquare(endSquare)
 	end
 
 	self.P[endSquare] = self.selected.piece
 
 	-- TODO fix adding piece to list on promotion
-	if not pieceToMove:isKing() then
-		self.allPieceLists[pieceToMove.type:lower()][pieceToMove.color]:movePiece(startSquare, endSquare)
+	if not Piece.type(pieceToMove) == Piece.KING then
+		self.allPieceLists[Piece.type(pieceToMove)][self.colorToMove]:movePiece(startSquare, endSquare)
 	else
-		self.kings[pieceToMove.color] = endSquare
+		self.kings[self.colorToMove] = endSquare
 	end
 
-	self.P[endSquare].hasMoved = true
+	-- self.P[endSquare].hasMoved = true
 	self.colorToMove, self.opponentColor = self.opponentColor, self.colorToMove
-	MG:generateMoves()
+	MG:generateMoves(self, true)
 end
 
 function Board:printAllPieceLists()
