@@ -68,8 +68,8 @@ function Board:init()
 		[-1] = 0,
 	}
 
-	-- self:fenToPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
-	self:fenToPosition('rnbqkbnr/8/8/8/8/8/8/RNBQKBNR')
+	self:fenToPosition('rnbqkbnr/ppp1pppp/8/8/8/p6p/PPP1pPPP/RNBQKBNR')
+	-- self:fenToPosition('rnbqkbnr/8/8/8/8/8/8/RNBQKBNR')
 	-- self:fenToPosition('4k3/8/8/8/8/8/8/4K3')
 	-- self:fenToPosition('r3k2r/8/8/8/8/8/8/R3K2R')
 	-- self:fenToPosition('rnbqk2r/ppppPppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
@@ -222,7 +222,7 @@ function Board:makeMove(startSquare, endSquare, flag)
 		local pushDirection = self.colorToMove
 		self.enpassantSquare = endSquare - (8 * pushDirection)
 	end
-	if flag == 'en passant' then
+	if flag == 'enpassant' then
 		local pushDirection = self.colorToMove
 		self.P[endSquare - (8 * pushDirection)] = 0
 

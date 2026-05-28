@@ -206,12 +206,13 @@ function MoveGenerator:generatePawnMoves()
 		local startSquare = pawns[i]
 		local rank = RankIndex(startSquare - 1)				-- 0 indexed
 		local resultsInPromotion = rank == rankBeforePromotion
+		local isPinned = self:isSquarePinned(startSquare)
 
 		if self.generateQuietMoves then
 			local pushSquare = startSquare + pushOffset
 
 			if self.B.P[pushSquare] == 0 then
-				if self:isSquarePinned(startSquare) and not self:isAlongRay(pushOffset, startSquare, self.friendlyKingSquare) then goto captures end
+				if isPinned and not self:isAlongRay(pushOffset, startSquare, self.friendlyKingSquare) then goto captures end
 
 				if not self.inCheck or self:isSquareInCheckRay(pushSquare) then
 					if resultsInPromotion then
@@ -235,10 +236,57 @@ function MoveGenerator:generatePawnMoves()
 
 		::captures::
 
+		for j = 1, 2 do
+			local captureDirection = pawnAttackDirections[self.friendlyColor][j]
+			if numSquaresToEdge[startSquare][captureDirection] > 0 then
+				local captureOffset = slidingOffsets[captureDirection]
+				local captureSquare = startSquare + captureOffset
+
+				if isPinned and not self:isAlongRay(captureOffset, startSquare, self.friendlyKingSquare) then goto continue end
+
+				local pieceOnEndSquare = self.B.P[captureSquare]
+
+				if Piece.colorIndex(pieceOnEndSquare) == self.opponentColor then
+					if not self.inCheck or self:isSquareInCheckRay(captureSquare) then
+						if resultsInPromotion then
+							self:generatePromotionMoves(startSquare, captureSquare)
+						else
+							table.insert(self.moves, {startSquare, captureSquare})
+						end
+					end
+				elseif captureSquare == self.B.enpassantSquare then
+					local epCapturedPawnSquare = captureSquare - pushOffset
+					if not self:inCheckAfterEnPassant(startSquare, captureSquare, epCapturedPawnSquare) then
+						table.insert(self.moves, {startSquare, captureSquare, flag = 'enpassant'})
+					end
+				end
+			end
+
+			::continue::
+		end
 	end
 end
 
 function MoveGenerator:generatePromotionMoves(startSquare, endSquare)
+	table.insert(self.moves, {startSquare, endSquare, flag = 'promote '})
+	table.insert(self.moves, {startSquare, endSquare, flag = 'promote '})
+	table.insert(self.moves, {startSquare, endSquare, flag = 'promote '})
+	table.insert(self.moves, {startSquare, endSquare, flag = 'promote '})
+end
+
+-- endSquare seems to not be necessary
+function MoveGenerator:inCheckAfterEnPassant(startSquare, endSquare, epCapturedPawnSquare)
+	return false
+	-- self.B.P[endSquare] = self.B.P[startSquare]
+	-- self.B.P[startSquare] = Piece.NONE
+	-- self.B.P[epCapturedPawnSquare] = Piece.NONE
+
+	-- get direction from friendlyKingSquare to epCapturedPawnSquare
+	-- move along direction from friendlyKingSquare
+	-- if first piece found is friendlyColor, no check
+	-- if first piece found is opponentColor, check if that piece can move along the direction
+
+
 end
 
 function MoveGenerator:calculateAttackData()
