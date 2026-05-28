@@ -11,26 +11,6 @@ local lshift, rshift = bit.lshift, bit.rshift
 MoveGenerator = Object:extend()
 
 function MoveGenerator:init()
-	-- self.opponentAttackMap = nil -- bit board of all squares attacked by opponent
-
-	-- self.slidingOffsets = {8, -8, -1, 1, 7, -7, 9, -9} -- N, S, W, E, NW, SE, NE, SW
-	-- self.numSquaresToEdge = {}
-
-	-- self.kingMoves = {}
-	-- self.kingAttackBitBoards = {}
-
-	-- self.knightMoves = {}
-	-- self.knightAttackBitBoards = {}
-
-	-- self.pawnAttackBitBoards = {}
-	-- self.pawnAttackBitBoards[1] = {}
-	-- self.pawnAttackBitBoards[-1] = {}
-
-	-- self.bishopMoves = {}
-	-- self.rookMoves = {}
-	-- self.queenMoves = {}
-
-	-- self:precomputedMoveData()
 end
 
 function MoveGenerator:clear()
@@ -55,22 +35,18 @@ function MoveGenerator:generateMoves(board, includeQuietMoves)
 	self:calculateAttackData()
 	self:generateKingMoves()
 
-	if self.inDoubleCheck then
-		print('in double check')
-		return self.moves
-	end
+	if self.inDoubleCheck then return self.moves end
 
 	self:generateSlidingMoves()
 	self:generateKnightMoves()
 	self:generatePawnMoves()
 
-	self:printMoves()
+	-- self:printMoves()
 
 	return self.moves
 end
 
 function MoveGenerator:generateKingMoves()
-	print('generating king moves')
 	for i = 1, #kingMoves[self.friendlyKingSquare] do
 		local endSquare = kingMoves[self.friendlyKingSquare][i]
 		local pieceOnEndSquare = self.B.P[endSquare]
@@ -108,22 +84,18 @@ function MoveGenerator:generateKingMoves()
 end
 
 function MoveGenerator:generateSlidingMoves()
-	print('generating sliding moves')
 	local queens = self.B.queens[self.friendlyColor]
 	for i = 1, queens.numPieces do
-		print('generating queen moves')
 		self:generateSlidingPieceMoves(queens[i], 1, 8)
 	end
 
 	local rooks = self.B.rooks[self.friendlyColor]
 	for i = 1, rooks.numPieces do
-		print('generating rook moves')
 		self:generateSlidingPieceMoves(rooks[i], 1, 4)
 	end
 
 	local bishops = self.B.bishops[self.friendlyColor]
 	for i = 1, bishops.numPieces do
-		print('generating bishop moves')
 		self:generateSlidingPieceMoves(bishops[i], 5, 8)
 	end
 end
@@ -161,7 +133,6 @@ function MoveGenerator:generateSlidingPieceMoves(startSquare, startDirection, en
 end
 
 function MoveGenerator:generateKnightMoves()
-	print('generating knight moves')
 	local knights = self.B.knights[self.friendlyColor]
 
 	for i = 1, knights.numPieces do
@@ -188,7 +159,6 @@ function MoveGenerator:generateKnightMoves()
 end
 
 function MoveGenerator:generatePawnMoves()
-	print('generating pawn moves')
 	local pawns = self.B.pawns[self.friendlyColor]
 	local pushOffset = self.friendlyColor * 8
 	local enpassantSquare = self.B.enpassantSquare
@@ -290,7 +260,6 @@ function MoveGenerator:inCheckAfterEnPassant(startSquare, endSquare, epCapturedP
 end
 
 function MoveGenerator:calculateAttackData()
-	print('calculating attack data')
 	self:calculateSlidingAttackData()
 
 	-- TODO small optimization: if no queens and no rooks/bishops don't need to check all directions around the king
@@ -346,7 +315,6 @@ function MoveGenerator:calculateAttackData()
 end
 
 function MoveGenerator:calculateSlidingAttackData()
-	print('calculating sliding attack data')
 	self.slidingAttackMap = ffi.new('uint64_t', 0)
 
 	local queens = self.B.queens[self.opponentColor]
@@ -367,6 +335,7 @@ end
 
 function MoveGenerator:calculateSlidingAttackPiece(startSquare, startDirection, endDirection)
 	local mask = ffi.new('uint64_t', 1)
+
 	for directionIndex = startDirection, endDirection do
 		for n = 1, numSquaresToEdge[startSquare][directionIndex] do
 			local endSquare = startSquare + slidingOffsets[directionIndex] * n
@@ -384,7 +353,6 @@ function MoveGenerator:calculateSlidingAttackPiece(startSquare, startDirection, 
 end
 
 function MoveGenerator:calculateKnightAttackData()
-	print('calculating knight attack data')
 	self.knightAttackMap = ffi.new('uint64_t', 0)
 	self.inKnightCheck = false
 
@@ -405,7 +373,6 @@ function MoveGenerator:calculateKnightAttackData()
 end
 
 function MoveGenerator:calculatePawnAttackData()
-	print('calculating pawn attack data')
 	self.pawnAttackMap = ffi.new('uint64_t', 0)
 	self.inPawnCheck = false
 
