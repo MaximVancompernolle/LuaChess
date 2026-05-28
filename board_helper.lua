@@ -60,5 +60,9 @@ local GundersenFaul1928 = 'r1bq1r2/pp2n3/4N2k/3pPppP/1b1n2Q1/2N5/PP3PP1/R1B1K2R 
 local RetiTartakower1910 = 'rnb1kb1r/pp3ppp/2p5/4q3/4n3/3Q4/PPPB1PPP/2KR1BNR w kq - 0 8'
 local AnderssenDufresne1852 = '1r2k1r1/pbppnp1p/1bn2P2/8/Q7/B1PB1q2/P4PPP/3RR1K1 w - - 0 19'
 
+-- ep check positions
+local EPBishopCheck = '4k3/6b1/8/4pP2/8/2K5/8/8 w - e6 0 1'
+local EPRookCheck = '4k3/8/8/1K2pP1r/8/8/8/8 w - e6 0 1'
+
 -- perft positions
 local position5 = 'rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8'
