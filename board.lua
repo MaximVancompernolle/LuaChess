@@ -59,12 +59,12 @@ function Board:init()
 	}
 
 	self.allPieceLists = {
-		[1] = self.kings,
-		[2] = self.pawns,
-		[3] = self.knights,
-		[5] = self.bishops,
-		[6] = self.rooks,
-		[7] = self.queens,
+		[Piece.KING] = self.kings,
+		[Piece.PAWN] = self.pawns,
+		[Piece.KNIGHT] = self.knights,
+		[Piece.BISHOP] = self.bishops,
+		[Piece.ROOK] = self.rooks,
+		[Piece.QUEEN] = self.queens,
 	}
 
 	self.attackMap = {
@@ -257,20 +257,21 @@ function Board:makeMove(startSquare, endSquare, flag)
 
 	-- update piece list when piece is captured
 	if self.P[endSquare] ~= Piece.NONE then
-		local pieceToCapture = self.P[endSquare]
-		self.allPieceLists[Piece.type(pieceToCapture)][self.opponentColor]:removePieceAtSquare(endSquare)
+		local pieceToCaptureType = tonumber(Piece.type(self.P[endSquare]))
+		self.allPieceLists[pieceToCaptureType][self.opponentColor]:removePieceAtSquare(endSquare)
 	end
 
 	self.P[endSquare] = self.selected.piece
 
+	local pieceToMoveType = tonumber(Piece.type(pieceToMove))
+
 	-- TODO fix adding piece to list on promotion
-	if not Piece.type(pieceToMove) == Piece.KING then
-		self.allPieceLists[Piece.type(pieceToMove)][self.colorToMove]:movePiece(startSquare, endSquare)
+	if pieceToMoveType ~= Piece.KING then
+		self.allPieceLists[pieceToMoveType][self.colorToMove]:movePiece(startSquare, endSquare)
 	else
 		self.kings[self.colorToMove] = endSquare
 	end
 
-	-- self.P[endSquare].hasMoved = true
 	self.colorToMove, self.opponentColor = self.opponentColor, self.colorToMove
 	MG:generateMoves(self, true)
 end
