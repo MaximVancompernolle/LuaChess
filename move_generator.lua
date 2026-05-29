@@ -67,13 +67,13 @@ function MoveGenerator:generateKingMoves()
 					local kingsideCastleSquare = endSquare + 1
 
 					if self.B.P[kingsideCastleSquare] == 0 and not self:isSquareAttacked(kingsideCastleSquare) then
-						table.insert(self.moves, {self.friendlyKingSquare, kingsideCastleSquare, 'O-O'})
+						table.insert(self.moves, {self.friendlyKingSquare, kingsideCastleSquare, flag = 'O-O'})
 					end
 				elseif (endSquare == 4 or endSquare == 60) and self.B.castlingRights[self.friendlyColor]['Q'] then
 					local queensideCastleSquare = endSquare - 1
 
 					if self.B.P[queensideCastleSquare] == 0 and self.B.P[queensideCastleSquare - 1] == 0 and not self:isSquareAttacked(queensideCastleSquare) then
-						table.insert(self.moves, {self.friendlyKingSquare, queensideCastleSquare, 'O-O-O'})
+						table.insert(self.moves, {self.friendlyKingSquare, queensideCastleSquare, flag = 'O-O-O'})
 					end
 				end
 			end
@@ -197,7 +197,7 @@ function MoveGenerator:generatePawnMoves()
 
 					if self.B.P[doublePushSquare] == 0 then
 						if not self.inCheck or self:isSquareInCheckRay(doublePushSquare) then
-							table.insert(self.moves, {startSquare, doublePushSquare})
+							table.insert(self.moves, {startSquare, doublePushSquare, flag = 'double push'})
 						end
 					end
 				end
@@ -225,6 +225,7 @@ function MoveGenerator:generatePawnMoves()
 						end
 					end
 				elseif captureSquare == self.B.enpassantSquare then
+					-- TODO update to use PCMD epCaptureSquares
 					local epCapturedPawnSquare = captureSquare - pushOffset
 					if not self:inCheckAfterEnPassant(startSquare, captureSquare, epCapturedPawnSquare) then
 						table.insert(self.moves, {startSquare, captureSquare, flag = 'enpassant'})
