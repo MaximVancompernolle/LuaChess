@@ -213,7 +213,6 @@ function Board:makeMove(startSquare, endSquare, flag)
 		add position to history for 3-fold repetition
 	]]
 
-	-- TODO use this piece instead of self.selected.piece
 	local pieceToMove = self.P[startSquare]
 
 	self.enpassantSquare = nil
@@ -221,33 +220,28 @@ function Board:makeMove(startSquare, endSquare, flag)
 
 	if not flag then goto skipFlags end
 
-	--[[
-		test that piece lists are being updated properly for all flags
-	]]
-
 	if flag == 'double push' then
-		local pushDirection = self.colorToMove
-		self.enpassantSquare = endSquare - (8 * pushDirection)
+		self.enpassantSquare = epSquares[endSquare]
 	end
 	if flag == 'enpassant' then
-		local pushDirection = self.colorToMove
-		self.P[endSquare - (8 * pushDirection)] = 0
-
-		self.pawns[self.colorToMove * -1]:removePieceAtSquare(endSquare - (8 * pushDirection))
+		local epCaptureSquare = epCaptureSquares[endSquare]
+		self.P[epCaptureSquare] = Piece.NONE
+		self.pawns[self.opponentColor]:removePieceAtSquare(epCaptureSquare)
 	end
 	if string.find(flag, 'promote') then
-		self.selected.piece = Piece(flag[-1])
+		-- TODO fix
+		pieceToMove = Piece(flag[-1])
 	end
 	if flag == 'O-O' then
 		self.P[endSquare - 1] = self.P[endSquare + 1]
-		self.P[endSquare + 1] = 0
+		self.P[endSquare + 1] = Piece.NONE
 
 		self.rooks[self.colorToMove]:movePiece(endSquare + 1, endSquare - 1)
 		self.kings[self.colorToMove] = endSquare
 	end
 	if flag == 'O-O-O' then
 		self.P[endSquare + 1] = self.P[endSquare - 2]
-		self.P[endSquare - 2] = 0
+		self.P[endSquare - 2] = Piece.NONE
 
 		self.rooks[self.colorToMove]:movePiece(endSquare - 2, endSquare + 1)
 		self.kings[self.colorToMove] = endSquare
@@ -255,14 +249,12 @@ function Board:makeMove(startSquare, endSquare, flag)
 
 	::skipFlags::
 
-	-- update piece list when piece is captured
 	if self.P[endSquare] ~= Piece.NONE then
 		local pieceToCaptureType = tonumber(Piece.type(self.P[endSquare]))
 		self.allPieceLists[pieceToCaptureType][self.opponentColor]:removePieceAtSquare(endSquare)
 	end
 
-	self.P[endSquare] = self.selected.piece
-
+	self.P[endSquare] = pieceToMove
 	local pieceToMoveType = tonumber(Piece.type(pieceToMove))
 
 	-- TODO fix adding piece to list on promotion
@@ -272,6 +264,7 @@ function Board:makeMove(startSquare, endSquare, flag)
 		self.kings[self.colorToMove] = endSquare
 	end
 
+	-- should probably be moved elsewhere
 	self.colorToMove, self.opponentColor = self.opponentColor, self.colorToMove
 	MG:generateMoves(self, true)
 end
